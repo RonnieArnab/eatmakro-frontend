@@ -1,0 +1,1512 @@
+<title>EatMakro</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* ===== EatMakro ==========================================================
+   Neutrals are a cold prep-room grey-blue and stay fixed. Every saturated
+   colour on the page comes from whichever bowl is selected: the accent is
+   pulled out of the food itself, so choosing a bowl re-themes the site. */
+:root{
+  --paper:#dde4e9;
+  --paper-2:#eceff3;
+  --paper-3:#f6f8fa;
+  --ink:#0f1a22;
+  --ink-60:rgba(15,26,34,.60);
+  --ink-32:rgba(15,26,34,.32);
+  --ink-14:rgba(15,26,34,.14);
+  --ink-07:rgba(15,26,34,.07);
+  --steel:#8794a0;
+  --veil:rgba(221,228,233,.88);
+  --shade:rgba(15,26,34,.09);
+  /* set by JS from the active bowl; these are the day-one defaults */
+  --accent:#d6321c;
+  --accent-soft:rgba(214,50,28,.13);
+
+  --font-display:"Bricolage Grotesque","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-scale:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --rail:58px;
+  --gutter:clamp(18px,4vw,72px);
+  --measure:34ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0b1117; --paper-2:#131b22; --paper-3:#1a242c; --ink:#dfe8ee;
+    --ink-60:rgba(223,232,238,.62); --ink-32:rgba(223,232,238,.32);
+    --ink-14:rgba(223,232,238,.15); --ink-07:rgba(223,232,238,.07);
+    --steel:#6d7b87; --veil:rgba(11,17,23,.88); --shade:rgba(0,0,0,.34);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0b1117; --paper-2:#131b22; --paper-3:#1a242c; --ink:#dfe8ee;
+  --ink-60:rgba(223,232,238,.62); --ink-32:rgba(223,232,238,.32);
+  --ink-14:rgba(223,232,238,.15); --ink-07:rgba(223,232,238,.07);
+  --steel:#6d7b87; --veil:rgba(11,17,23,.88); --shade:rgba(0,0,0,.34);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--font-display);font-size:17px;line-height:1.5;
+  font-variation-settings:"wdth" 96;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  transition:background-color .45s ease,color .45s ease;
+}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+::selection{background:var(--accent);color:#fff}
+.mono{font-family:var(--font-scale);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ================= scale rail =========================================== */
+.rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail);border-right:1px solid var(--ink-14);
+  background:var(--paper);z-index:40;transition:background-color .45s ease}
+.rail-ticks{position:absolute;inset:0;
+  background-image:
+    repeating-linear-gradient(to bottom,var(--ink-32) 0 1px,transparent 1px 8px),
+    repeating-linear-gradient(to bottom,var(--ink-32) 0 1px,transparent 1px 40px);
+  background-size:11px 100%,22px 100%;background-position:right 0 top 0;background-repeat:repeat-y;opacity:.7}
+.rail-read{position:absolute;left:6px;right:6px;padding:5px 0 6px;text-align:center;
+  background:var(--accent);color:#fff;border-radius:2px;font-family:var(--font-scale);
+  font-size:11px;font-variant-numeric:tabular-nums;line-height:1.1;will-change:transform;
+  transition:background-color .45s ease}
+.rail-read b{display:block;font-weight:500;font-size:13px}
+.rail-read span{display:block;font-size:9px;opacity:.82;letter-spacing:.06em}
+.rail-cap{position:absolute;left:0;right:0;bottom:14px;margin:0 auto;height:120px;text-align:center;
+  font-family:var(--font-scale);font-size:9px;color:var(--ink-32);letter-spacing:.18em;
+  writing-mode:vertical-rl;transform:rotate(180deg)}
+
+/* ================= 3D stage ============================================= */
+#stage{position:fixed;top:0;right:0;bottom:0;width:38vw;min-width:360px;z-index:1;pointer-events:none}
+#stage canvas{display:block;width:100%;height:100%}
+#annos{position:fixed;inset:0;z-index:2;pointer-events:none}
+#annoLines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.chip{position:absolute;transform:translate(-50%,-50%);background:var(--paper-2);border:1px solid var(--ink);
+  padding:5px 9px 6px;white-space:nowrap;font-family:var(--font-scale);font-size:11px;line-height:1.25;
+  box-shadow:3px 3px 0 var(--ink-14)}
+.chip b{display:block;font-weight:500;font-size:12px;color:var(--accent)}
+.chip span{color:var(--ink-60)}
+
+/* ================= header + interactive logo ============================ */
+header{position:fixed;top:0;left:var(--rail);right:0;z-index:30;display:flex;align-items:center;
+  gap:clamp(10px,2vw,30px);padding:14px var(--gutter);
+  background:linear-gradient(to bottom,var(--paper) 62%,transparent)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.035em;
+  font-variation-settings:"wdth" 92;text-decoration:none;background:none;border:0;color:inherit;
+  cursor:pointer;padding:0;font-family:inherit}
+.brand .hot{color:var(--accent);transition:color .45s ease}
+.brand svg{display:block;width:30px;height:30px;flex:none;overflow:visible}
+/* the monogram is a balance: the beam tips, the pan swings level again */
+.lg-beam{transform-box:view-box;transform-origin:100px 104px;
+  transition:transform .7s cubic-bezier(.22,1.4,.36,1)}
+.lg-pan{transform-box:view-box;transform-origin:100px 132px;
+  transition:transform .7s cubic-bezier(.22,1.4,.36,1)}
+.lg-dot{transform-box:view-box;transform-origin:100px 42px;
+  transition:transform .5s cubic-bezier(.22,1.6,.36,1)}
+.brand:hover .lg-beam,.brand:focus-visible .lg-beam,.brand.tip .lg-beam{transform:rotate(-9deg)}
+.brand:hover .lg-pan,.brand:focus-visible .lg-pan,.brand.tip .lg-pan{transform:rotate(9deg) translateY(5px)}
+.brand:hover .lg-dot,.brand:focus-visible .lg-dot,.brand.tip .lg-dot{transform:scale(1.5)}
+.lg-fill{fill:var(--accent);transition:fill .45s ease}
+nav{display:flex;gap:clamp(10px,1.6vw,24px);margin-left:auto;align-items:center}
+nav a{font-size:14px;color:var(--ink-60);text-decoration:none;padding:4px 0;border-bottom:1px solid transparent}
+nav a:hover{color:var(--ink);border-bottom-color:var(--accent)}
+.btn{font:inherit;font-size:14px;font-weight:600;padding:9px 16px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--paper);cursor:pointer;border-radius:2px;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.theme{width:36px;height:36px;padding:0;display:grid;place-items:center;border:1px solid var(--ink-32);
+  background:transparent;color:var(--ink);cursor:pointer;border-radius:2px}
+.theme:hover{border-color:var(--accent);color:var(--accent)}
+.theme svg{width:17px;height:17px;display:block}
+.theme .moon{display:none}
+:root[data-theme="dark"] .theme .moon{display:block}
+:root[data-theme="dark"] .theme .sun{display:none}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .theme .moon{display:block}
+  :root:not([data-theme="light"]) .theme .sun{display:none}
+}
+@media (max-width:900px){ nav .navlink{display:none} }
+
+/* ================= page ================================================= */
+main{position:relative;z-index:3;margin-left:var(--rail);
+  padding:0 var(--gutter);padding-right:calc(38vw + var(--gutter))}
+section{padding:clamp(76px,10vh,132px) 0;border-top:1px solid var(--ink-14)}
+section:first-of-type{border-top:0}
+.marker{font-family:var(--font-scale);font-size:12px;color:var(--accent);display:flex;align-items:baseline;
+  gap:10px;margin-bottom:24px;transition:color .45s ease}
+.marker::after{content:"";flex:1;height:1px;background:var(--ink-14);transform:translateY(-4px)}
+h2{font-size:clamp(32px,4.9vw,60px);font-weight:800;letter-spacing:-.035em;line-height:.99;margin:0 0 18px;
+  font-variation-settings:"wdth" 94;text-wrap:balance;max-width:17ch}
+p{max-width:var(--measure);margin:0 0 14px;color:var(--ink-60)}
+.lede{font-size:21px;line-height:1.38;color:var(--ink);max-width:40ch}
+
+.hero{padding-top:clamp(118px,16vh,182px);min-height:min(700px,82vh);display:flex;flex-direction:column;justify-content:center}
+h1{font-size:clamp(54px,11.8vw,142px);font-weight:800;letter-spacing:-.035em;line-height:.86;margin:0 0 22px}
+h1 em{font-style:normal;color:var(--accent);transition:color .45s ease}
+h1 .lo{font-weight:300;font-variation-settings:"wdth" 88}
+.stats{display:flex;flex-wrap:wrap;column-gap:clamp(18px,3vw,44px);row-gap:20px;margin-top:34px;padding-top:20px;border-top:1px solid var(--ink)}
+.stat b{display:block;font-family:var(--font-scale);font-size:clamp(21px,2.5vw,29px);font-weight:500;letter-spacing:-.02em}
+.stat span{display:block;font-size:12px;color:var(--ink-60);margin-top:3px}
+
+/* ---------- bowl chooser ------------------------------------------------ */
+.bowls{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;max-width:700px;margin:4px 0 22px}
+.bowl{position:relative;text-align:left;font:inherit;cursor:pointer;padding:14px 14px 15px;
+  background:var(--paper-2);border:1px solid var(--ink-14);border-radius:3px;color:inherit;
+  display:flex;flex-direction:column;gap:3px;transition:border-color .25s,background-color .25s,transform .25s}
+.bowl:hover{transform:translateY(-2px);border-color:var(--ink-32)}
+.bowl .swatch{width:26px;height:26px;border-radius:50%;margin-bottom:8px;
+  box-shadow:inset 0 -8px 12px rgba(0,0,0,.22)}
+.bowl .bn{font-weight:700;font-size:16px;letter-spacing:-.02em;line-height:1.15}
+.bowl .bt{font-family:var(--font-scale);font-size:10px;letter-spacing:.1em;color:var(--ink-32)}
+.bowl .bm{font-family:var(--font-scale);font-size:12px;color:var(--ink-60);margin-top:7px}
+.bowl[aria-pressed="true"]{background:var(--paper-3);border-color:var(--bc)}
+.bowl[aria-pressed="true"]::after{content:"";position:absolute;inset:-1px;border:2px solid var(--bc);border-radius:3px;pointer-events:none}
+.bowl[aria-pressed="true"] .bt{color:var(--bc)}
+
+/* ---------- spec table -------------------------------------------------- */
+.spec{width:100%;border-collapse:collapse;max-width:640px;margin:8px 0 20px}
+.spec caption{text-align:left;font-size:12px;color:var(--ink-32);font-family:var(--font-scale);padding-bottom:8px}
+.spec th,.spec td{text-align:left;padding:11px 12px 11px 0;border-bottom:1px solid var(--ink-14);vertical-align:baseline}
+.spec thead th{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-32);font-weight:500;padding-bottom:7px}
+.spec tbody th{font-weight:600;font-size:16px}
+.spec .note{font-size:13px;color:var(--ink-60);font-weight:400}
+.spec .g{font-family:var(--font-scale);font-variant-numeric:tabular-nums;text-align:right;padding-right:0;white-space:nowrap;width:1%}
+.spec tfoot td,.spec tfoot th{border-bottom:0;border-top:1px solid var(--ink);font-weight:700;padding-top:12px}
+.spec tfoot .g{color:var(--accent)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:baseline}
+
+/* ---------- macro tiles ------------------------------------------------- */
+.macros{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--ink-14);
+  border:1px solid var(--ink-14);max-width:620px;margin:6px 0 22px}
+.tile{background:var(--paper-2);padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.tile b{font-family:var(--font-scale);font-size:32px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.tile .k{font-size:12px;color:var(--ink-60)}
+.tile.hot b{color:var(--accent)}
+.bar{height:4px;background:var(--ink-14);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--ink-60);display:block;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.tile.hot .bar i{background:var(--accent)}
+.tile.fat .bar i{background:#d9761f}
+.batch{font-family:var(--font-scale);font-size:11px;color:var(--ink-60);border-top:1px solid var(--ink-14);
+  padding-top:10px;max-width:620px;letter-spacing:.02em}
+
+/* ---------- switch / plans / areas / form ------------------------------- */
+.switch{display:inline-flex;border:1px solid var(--ink);margin:4px 0 22px;border-radius:2px;overflow:hidden}
+.switch button{font:inherit;font-size:14px;font-weight:600;padding:10px 20px;background:transparent;color:var(--ink);border:0;cursor:pointer}
+.switch button+button{border-left:1px solid var(--ink)}
+.switch button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.switch button:hover:not([aria-pressed="true"]){background:var(--ink-07)}
+.portion-read{display:flex;flex-wrap:wrap;gap:26px;max-width:620px;margin-bottom:16px}
+.portion-read div b{display:block;font-family:var(--font-scale);font-size:24px;font-weight:500;letter-spacing:-.02em}
+.portion-read div span{font-size:12px;color:var(--ink-60)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:1px;background:var(--ink-14);
+  border:1px solid var(--ink-14);max-width:660px;margin:4px 0 20px}
+.plan{background:var(--paper-2);padding:18px 16px;display:flex;flex-direction:column;gap:4px}
+.plan .rate{font-family:var(--font-scale);font-size:28px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.plan .len{font-size:13px;color:var(--ink-60)}
+.plan .per{font-size:11px;color:var(--ink-32);font-family:var(--font-scale);margin-top:auto;padding-top:12px}
+.plan.pick{background:var(--paper-3);box-shadow:inset 0 0 0 2px var(--accent)}
+.plan.pick .rate,.plan.pick .flag{color:var(--accent)}
+.plan.pick .flag{font-family:var(--font-scale);font-size:10px;letter-spacing:.1em}
+.areas{display:flex;flex-wrap:wrap;gap:8px;max-width:620px;margin:6px 0 20px}
+.area{font-family:var(--font-scale);font-size:13px;padding:7px 12px;border:1px solid var(--ink-32);border-radius:2px}
+.area.live{border-color:var(--accent);color:var(--accent)}
+.area.soon{border-style:dashed;color:var(--ink-32)}
+.area i{font-style:normal;opacity:.7;font-size:11px;margin-left:6px}
+.form{max-width:520px;display:grid;gap:12px;margin:6px 0 0}
+.row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+label{display:block;font-size:12px;color:var(--ink-60);margin-bottom:5px}
+input,select{font:inherit;font-size:16px;width:100%;padding:11px 12px;border:1px solid var(--ink-32);
+  background:var(--paper-2);color:var(--ink);border-radius:2px}
+input:focus,select:focus{border-color:var(--accent)}
+.count{font-family:var(--font-scale);font-size:13px;color:var(--ink-60);margin-top:4px}
+.count b{color:var(--accent);font-weight:500}
+.said{font-family:var(--font-scale);font-size:14px;color:var(--ink-60);margin-top:4px}
+.said.bad{color:var(--accent)}
+
+/* ---------- marquee, footer, loader ------------------------------------- */
+.mq{overflow:hidden;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:12px 0;
+  margin-left:var(--rail);position:relative;z-index:3;background:var(--paper)}
+.mq div{display:flex;gap:34px;width:max-content;animation:sl 26s linear infinite;font-family:var(--font-scale);
+  font-size:13px;letter-spacing:.14em;color:var(--ink-60);white-space:nowrap}
+.mq em{font-style:normal;color:var(--accent)}
+@keyframes sl{to{transform:translateX(-50%)}}
+footer{margin-left:var(--rail);padding:36px var(--gutter) 44px;position:relative;z-index:3;background:var(--paper);
+  display:flex;flex-wrap:wrap;gap:14px 32px;align-items:baseline;font-size:13px;color:var(--ink-60)}
+footer .sig{font-weight:700;color:var(--ink);font-size:15px;letter-spacing:-.02em}
+#load{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;flex-direction:column;
+  justify-content:flex-end;padding:var(--gutter);gap:14px;transition:opacity .5s ease}
+#load .lname{font-size:clamp(36px,7.6vw,84px);font-weight:800;letter-spacing:-.04em;line-height:.9}
+#load .lname em{font-style:normal;color:var(--accent)}
+#load .lrow{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-scale);
+  font-size:13px;color:var(--ink-60);border-top:1px solid var(--ink);padding-top:12px}
+#load .lbar{height:2px;background:var(--ink-14);position:relative}
+#load .lbar i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);display:block}
+#load.done{opacity:0;pointer-events:none}
+
+@media (max-width:900px){
+  main{padding-right:var(--gutter)}
+  #stage{width:100%;height:50vh;min-width:0;top:0;bottom:auto}
+  .hero{padding-top:calc(50vh + 20px);min-height:0;background:var(--veil)}
+  section:not(.hero){background:var(--veil)}
+  section{padding-left:14px;padding-right:14px;margin-left:-14px;margin-right:-14px}
+  .row{grid-template-columns:1fr}
+  #annos{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .mq div{animation:none}
+  .lg-beam,.lg-pan,.lg-dot{transition:none}
+  .bowl{transition:none}
+}
+</style>
+
+<div id="load">
+  <div class="lname">Eat<em>Makro</em></div>
+  <div class="lbar"><i id="lbar"></i></div>
+  <div class="lrow"><span id="lstat">Zeroing the scale</span><span class="mono" id="lnum">0 g</span></div>
+</div>
+
+<div class="rail" aria-hidden="true">
+  <div class="rail-ticks"></div>
+  <div class="rail-read" id="railRead"><b>0</b><span>GRAMS</span></div>
+  <div class="rail-cap">NET WEIGHT</div>
+</div>
+
+<div id="stage" aria-hidden="true"></div>
+<div id="annos" aria-hidden="true"><svg id="annoLines"></svg></div>
+
+<header>
+  <a class="brand" id="brand" href="#top" aria-label="EatMakro, home">
+    <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+      <g class="lg-beam">
+        <path d="M18 104h164M46 104l24 26M154 104l-24 26" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+      </g>
+      <g class="lg-pan">
+        <path d="M32 128h136a10 10 0 0110 10v6c0 34-28 60-63 60h-30c-35 0-63-26-63-60v-6a10 10 0 0110-10z" fill="currentColor"/>
+        <rect class="lg-fill" x="32" y="128" width="156" height="13" rx="6.5"/>
+      </g>
+      <path d="M100 104V58" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+      <circle class="lg-dot lg-fill" cx="100" cy="42" r="17"/>
+    </svg>
+    Eat<span class="hot">Makro</span>
+  </a>
+  <nav>
+    <a class="navlink" href="#choose">bowls</a>
+    <a class="navlink" href="#box">the box</a>
+    <a class="navlink" href="#portions">portions</a>
+    <a class="navlink" href="#plans">plans</a>
+    <button class="theme" id="themeBtn" type="button" aria-label="Switch to dark mode">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.4"/><path d="M12 1.6v2.6M12 19.8v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M1.6 12h2.6M19.8 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9"/>
+      </svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.5 14.6A8.6 8.6 0 019.4 3.5a8.6 8.6 0 1011.1 11.1z"/>
+      </svg>
+    </button>
+    <a class="btn" href="#hold">Hold a slot</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <h1>Weighed,<br><span class="lo">not</span> <em>guessed.</em></h1>
+    <p class="lede">Four high-protein bowls cooked in Hyderabad every morning, put on a bench
+      scale component by component, and sealed. You get the grams. Not an adjective.</p>
+    <div class="stats">
+      <div class="stat"><b id="hStatP">48 g</b><span>protein, <span id="hStatName">Chicken Tikka</span></span></div>
+      <div class="stat"><b id="hStatK">520</b><span>kcal, measured</span></div>
+      <div class="stat"><b>&#8377;230</b><span>per meal, 20-day</span></div>
+      <div class="stat"><b>12:30&#8211;1:15</b><span>desk drop</span></div>
+    </div>
+  </section>
+
+  <!-- ======================= bowl chooser ============================== -->
+  <section id="choose">
+    <div class="marker mono">4 bowls</div>
+    <h2>Pick a bowl. The whole page follows it.</h2>
+    <p class="lede">Four rotations, one kitchen. Choose one and watch the dabba empty out and
+      refill &#8212; every ingredient is modelled, and the site takes its colour from whatever
+      is in the box.</p>
+    <div class="bowls" id="bowlPicker" role="group" aria-label="Choose a bowl"></div>
+    <p>Your plan is tied to one bowl so the rider carries a single rotation. Changing it
+      later is a message to the kitchen, not a checkout step.</p>
+  </section>
+
+  <!-- ======================= the box =================================== -->
+  <section id="box">
+    <div class="marker mono"><span id="mkBox">620 g</span></div>
+    <h2>Six things, each one weighed.</h2>
+    <p class="lede">Nothing is scooped by eye. Every component goes on the scale before it goes
+      in the dabba, and the box is weighed again once it is sealed.</p>
+    <table class="spec">
+      <caption class="mono" id="specCap">Chicken Tikka &#183; cut portion &#183; cooked weights &#183; batch HYD&#183;0417</caption>
+      <thead><tr><th scope="col">Component</th><th scope="col" class="g">Weight</th></tr></thead>
+      <tbody id="specBody"></tbody>
+      <tfoot><tr><th scope="row">Net weight</th><td class="g mono" id="specNet">620 g</td></tr></tfoot>
+    </table>
+    <p>The dabba itself is stainless steel and it is ours. Your rider takes yesterday's back
+      when today's arrives, so nothing about this meal is disposable except the sticker.</p>
+  </section>
+
+  <!-- ======================= the label ================================= -->
+  <section id="label">
+    <div class="marker mono"><span id="mkLabel">48 g</span></div>
+    <h2>The label is the product.</h2>
+    <p class="lede">A photo of a bowl tells you nothing. The lid carries the numbers the kitchen
+      actually measured, printed after the box is sealed &#8212; not before it is cooked.</p>
+    <div class="macros">
+      <div class="tile hot"><b class="mono" id="mP">48 g</b><div class="k">protein</div><div class="bar"><i id="bP"></i></div></div>
+      <div class="tile"><b class="mono" id="mC">55 g</b><div class="k">carbs</div><div class="bar"><i id="bC"></i></div></div>
+      <div class="tile fat"><b class="mono" id="mF">12 g</b><div class="k">fat</div><div class="bar"><i id="bF"></i></div></div>
+      <div class="tile"><b class="mono" id="mK">520</b><div class="k">kcal</div><div class="bar"><i id="bK"></i></div></div>
+    </div>
+    <div class="batch mono">WEIGHED HYD&#183;0417 &#160;&#183;&#160; <span id="mName">CHICKEN TIKKA</span> &#160;&#183;&#160; NET <span id="mNet">620 g</span> &#160;&#183;&#160; EAT WITHIN 6 h</div>
+  </section>
+
+  <!-- ======================= portions ================================== -->
+  <section id="portions">
+    <div class="marker mono"><span id="mkPort">130 g / 250 g</span></div>
+    <h2>Cut or bulk. Pick one and the box changes.</h2>
+    <p class="lede">Same kitchen, same 5 ml of oil, different weights on the scale. Switch it
+      here and watch the bowl rebuild itself.</p>
+    <div class="switch" role="group" aria-label="Portion size">
+      <button type="button" id="bCut" aria-pressed="true">Cut</button>
+      <button type="button" id="bBulk" aria-pressed="false">Bulk</button>
+    </div>
+    <div class="portion-read">
+      <div><b class="mono" id="pGrain">130 g</b><span id="pGrainL">rice, cooked</span></div>
+      <div><b class="mono" id="pProt">120 g</b><span id="pProtL">chicken tikka</span></div>
+      <div><b class="mono" id="pNet">620 g</b><span>net weight</span></div>
+    </div>
+    <p>Riders carry one type each, so a cut round and a bulk round leave the kitchen separately.
+      That is why the plan asks which one you want up front rather than letting you change it
+      meal to meal.</p>
+  </section>
+
+  <!-- ======================= plans ===================================== -->
+  <section id="plans">
+    <div class="marker mono">&#8377;230</div>
+    <h2>Longer plan, lower rate.</h2>
+    <p class="lede">One meal a day, six days a week. Sunday the kitchen is cleaned, so there is
+      no drop.</p>
+    <div class="plans">
+      <div class="plan"><div class="rate mono">&#8377;280</div><div class="len">Trial &#183; 3 days</div><div class="per mono">&#8377;840 total</div></div>
+      <div class="plan"><div class="rate mono">&#8377;250</div><div class="len">10-day plan</div><div class="per mono">&#8377;2,500 total</div></div>
+      <div class="plan pick"><div class="flag mono">MOST TAKEN</div><div class="rate mono">&#8377;230</div><div class="len">20-day plan</div><div class="per mono">&#8377;4,600 total</div></div>
+      <div class="plan"><div class="rate mono">&#8377;210</div><div class="len">30-day plan</div><div class="per mono">&#8377;6,300 total</div></div>
+    </div>
+    <p>Prices are per meal and include delivery inside the live zones. All four bowls cost the
+      same, and cut and bulk cost the same &#8212; the difference is weight, not price.</p>
+  </section>
+
+  <!-- ======================= delivery ================================== -->
+  <section id="where">
+    <div class="marker mono">4 km</div>
+    <h2>A four kilometre radius, on purpose.</h2>
+    <p class="lede">Food cooked at 11 should not be in a bag at 2. We only take addresses a rider
+      can reach inside the drop window.</p>
+    <div class="areas">
+      <span class="area live">Gachibowli <i>live</i></span>
+      <span class="area live">Hitech City <i>live</i></span>
+      <span class="area live">Madhapur <i>live</i></span>
+      <span class="area soon">Kondapur <i>next</i></span>
+      <span class="area soon">Financial District <i>next</i></span>
+    </div>
+    <p>The kitchen has a camera over the prep counter and the scale is in frame. If you want to
+      see the box you are eating being weighed, ask and we will send you the clip.</p>
+  </section>
+
+  <!-- ======================= hold a slot =============================== -->
+  <section id="hold">
+    <div class="marker mono">Pre-launch</div>
+    <h2>Hold a slot.</h2>
+    <p class="lede">We are cooking for a fixed number of desks on day one. Leave an email and we
+      will tell you when your area opens, before it goes public.</p>
+    <form class="form" id="holdForm" novalidate>
+      <div>
+        <label for="fEmail">Email</label>
+        <input id="fEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@work.com" required>
+      </div>
+      <div class="row">
+        <div>
+          <label for="fArea">Area</label>
+          <select id="fArea" name="area">
+            <option>Gachibowli</option><option>Hitech City</option><option>Madhapur</option>
+            <option>Kondapur</option><option>Financial District</option><option>Somewhere else</option>
+          </select>
+        </div>
+        <div>
+          <label for="fBowl">Bowl</label>
+          <select id="fBowl" name="bowl"></select>
+        </div>
+      </div>
+      <div>
+        <label for="fPortion">Portion</label>
+        <select id="fPortion" name="portion"><option>Cut</option><option>Bulk</option><option>Not sure yet</option></select>
+      </div>
+      <div><button class="btn" type="submit" id="fSubmit">Hold a slot</button></div>
+      <div class="count mono" id="fCount">&#160;</div>
+      <div class="said mono" id="fSaid" role="status"></div>
+    </form>
+  </section>
+
+</main>
+
+<div class="mq" aria-hidden="true"><div id="mqTrack"></div></div>
+
+<footer>
+  <span class="sig">EatMakro</span>
+  <span>Weighed, not guessed.</span>
+  <span>Hyderabad &#183; pre-launch</span>
+  <span class="mono">Returnable steel &#183; no disposable box</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =============================================================================
+   EatMakro — four procedural bowls, scroll choreography, swap morph.
+   Nothing is loaded from a file. Every mesh, texture and the environment map is
+   generated in code: the published page makes no asset request at all.
+   ========================================================================== */
+window.EatMakro = (function () {
+  'use strict';
+
+  var clamp01 = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
+  var ramp = function (p, a, b) { return clamp01((p - a) / (b - a)); };
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var ease = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+  function hash3(x, y, z) {
+    var n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
+  /* --------------------------------------------------------------- geometry */
+  function roundedBox(w, h, d, r, seg) {
+    seg = seg || 4;
+    r = Math.min(r, Math.min(w, h, d) / 2 - 0.001);
+    var g = new THREE.BoxGeometry(w, h, d, seg, seg, seg);
+    var pos = g.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
+    var hx = w / 2 - r, hy = h / 2 - r, hz = d / 2 - r;
+    for (var i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      c.set(THREE.MathUtils.clamp(v.x, -hx, hx), THREE.MathUtils.clamp(v.y, -hy, hy), THREE.MathUtils.clamp(v.z, -hz, hz));
+      var d2 = v.clone().sub(c);
+      if (d2.lengthSq() > 1e-8) { d2.setLength(r); v.copy(c).add(d2); }
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+  function roughen(geo, amount, freq) {
+    freq = freq || 3;
+    var pos = geo.attributes.position, v = new THREE.Vector3();
+    for (var i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      var n = hash3(v.x * freq, v.y * freq, v.z * freq) - 0.5;
+      var l = v.length() || 1;
+      v.multiplyScalar(1 + (n * amount) / l);
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    return geo;
+  }
+  var mat = function (color, rough, opts) {
+    var o = { color: color, roughness: rough === undefined ? 0.62 : rough, metalness: 0 };
+    if (opts) for (var k in opts) o[k] = opts[k];
+    return new THREE.MeshStandardMaterial(o);
+  };
+
+  /* ------------------------------------------------- environment + lighting */
+  function studioEnv(renderer) {
+    var c = document.createElement('canvas'); c.width = 512; c.height = 256;
+    var x = c.getContext('2d');
+    var g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0.00, '#f2f6fa'); g.addColorStop(0.30, '#c3ced8');
+    g.addColorStop(0.50, '#7c8894'); g.addColorStop(0.68, '#3d454d');
+    g.addColorStop(1.00, '#12171c');           /* a dark floor is what makes steel read */
+    x.fillStyle = g; x.fillRect(0, 0, 512, 256);
+    x.fillStyle = '#ffffff';
+    x.fillRect(38, 14, 152, 40); x.fillRect(298, 26, 104, 28);   /* two strip lights */
+    x.fillStyle = 'rgba(18,23,28,0.85)'; x.fillRect(214, 8, 54, 62);
+    x.fillStyle = 'rgba(255,206,158,0.46)'; x.fillRect(190, 120, 130, 40); /* warm bounce */
+    var tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    var pm = new THREE.PMREMGenerator(renderer);
+    pm.compileEquirectangularShader();
+    var env = pm.fromEquirectangular(tex).texture;
+    pm.dispose(); tex.dispose();
+    return env;
+  }
+  function contactShadow(radius, opacity) {
+    var c = document.createElement('canvas'); c.width = c.height = 256;
+    var x = c.getContext('2d');
+    var g = x.createRadialGradient(128, 128, 8, 128, 128, 126);
+    g.addColorStop(0, 'rgba(9,14,19,0.62)');
+    g.addColorStop(0.45, 'rgba(9,14,19,0.26)');
+    g.addColorStop(1, 'rgba(9,14,19,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(radius * 2, radius * 2),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, opacity: opacity }));
+    m.rotation.x = -Math.PI / 2;
+    return m;
+  }
+
+  /* ------------------------------------------------------------ steel parts */
+  function steelMat(dark) {
+    return new THREE.MeshStandardMaterial({ color: dark ? 0x6f7a85 : 0xc4ccd4, metalness: 0.96, roughness: 0.21 });
+  }
+  function steelBowl() {
+    var V = THREE.Vector2, p = [
+      new V(0.00, 0.00), new V(0.72, 0.00), new V(0.90, 0.05), new V(1.02, 0.18),
+      new V(1.10, 0.38), new V(1.15, 0.58), new V(1.19, 0.66), new V(1.15, 0.70),
+      new V(1.10, 0.66), new V(1.05, 0.55), new V(0.96, 0.32), new V(0.84, 0.14),
+      new V(0.66, 0.06), new V(0.00, 0.06)];
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.028, 10, 60), steelMat(true));
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0.02;
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(p, 72), steelMat()), ring);
+    return g;
+  }
+  function steelLid() {
+    var V = THREE.Vector2, p = [
+      new V(0.00, 0.16), new V(0.52, 0.155), new V(0.90, 0.13), new V(1.10, 0.08),
+      new V(1.20, 0.00), new V(1.16, -0.06), new V(1.06, -0.02), new V(0.86, 0.075),
+      new V(0.50, 0.10), new V(0.00, 0.105)];
+    var knob = new THREE.Mesh(new THREE.SphereGeometry(0.085, 20, 14), steelMat(true));
+    knob.scale.y = 0.72; knob.position.y = 0.19;
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(p, 72), steelMat()), knob);
+    return g;
+  }
+
+  /* ==========================================================================
+     Food. Every ingredient in the four rotations, modelled from primitives.
+     Colours are pushed saturated on purpose — the steel is the only neutral.
+     ====================================================================== */
+
+  /* grains --------------------------------------------------------------- */
+  function grainMound(o) {
+    var geo = new THREE.SphereGeometry(o.r || 0.038, 7, 5);
+    geo.scale(o.sx || 1.9, o.sy || 0.85, o.sz || 0.85);
+    var m = new THREE.InstancedMesh(geo, mat(o.color, 0.72), o.count);
+    var d = new THREE.Object3D();
+    for (var i = 0; i < o.count; i++) {
+      var a = hash3(i, 1.3, 7.7) * Math.PI * 2;
+      var rr = Math.sqrt(hash3(i, 4.1, 2.2)) * 0.80;
+      d.position.set(Math.cos(a) * rr, 0.22 * (1 - rr / 0.80) * (0.5 + hash3(i, 9.9, 0.4)), Math.sin(a) * rr);
+      d.rotation.set(hash3(i, 2, 5) * Math.PI, hash3(i, 5, 2) * Math.PI, hash3(i, 8, 3) * Math.PI);
+      d.scale.setScalar(0.82 + hash3(i, 3, 3) * 0.4);
+      d.updateMatrix(); m.setMatrixAt(i, d.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+    return m;
+  }
+  var basmati = function () { return grainMound({ count: 460, color: 0xf3efe1 }); };
+  var jeeraRice = function () {
+    var g = new THREE.Group();
+    g.add(grainMound({ count: 420, color: 0xf1e6cc }));
+    g.add(grainMound({ count: 46, color: 0x6b4a24, r: 0.026, sx: 1.7, sy: 0.9, sz: 0.9 })); /* cumin */
+    return g;
+  };
+  var millet = function () {
+    return grainMound({ count: 520, color: 0xd9c48c, r: 0.033, sx: 1.15, sy: 1, sz: 1 });
+  };
+
+  /* proteins -------------------------------------------------------------- */
+  var charMat = null;
+  function tikkaChunk(seed) {
+    var g = new THREE.Group();
+    var body = new THREE.Mesh(roughen(roundedBox(0.31, 0.27, 0.31, 0.09, 5), 0.05, 5 + seed), mat(0xdb4a1c, 0.58));
+    g.add(body);
+    if (!charMat) charMat = mat(0x5c2410, 0.72);
+    for (var i = 0; i < 3; i++) {
+      var s = new THREE.Mesh(new THREE.SphereGeometry(0.055 + hash3(i, seed, 2) * 0.03, 7, 5), charMat);
+      var a = hash3(i, seed, 4) * 6.28;
+      s.position.set(Math.cos(a) * 0.10, 0.12 + hash3(i, 1, seed) * 0.02, Math.sin(a) * 0.10);
+      s.scale.y = 0.45; g.add(s);
+    }
+    return g;
+  }
+  var searMat = null;
+  function paneerCube(seed) {
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(roundedBox(0.30, 0.25, 0.30, 0.045, 4), mat(0xf9f2dd, 0.68)));
+    if (!searMat) searMat = mat(0xc4761d, 0.55);
+    for (var i = 0; i < 2; i++) {
+      var bar = new THREE.Mesh(roundedBox(0.28, 0.02, 0.045, 0.01, 2), searMat);
+      bar.position.set(0, 0.126, -0.06 + i * 0.12);
+      g.add(bar);
+    }
+    return g;
+  }
+  function chickpeas(n) {
+    var geo = roughen(new THREE.SphereGeometry(0.082, 9, 7), 0.05, 9);
+    geo.scale(1, 0.9, 1);
+    var m = new THREE.InstancedMesh(geo, mat(0xe4b455, 0.55), n);
+    var d = new THREE.Object3D();
+    for (var i = 0; i < n; i++) {
+      var a = hash3(i, 2.7, 1.1) * 6.283;
+      var rr = Math.sqrt(hash3(i, 5.5, 3.3)) * 0.62;
+      d.position.set(Math.cos(a) * rr, 0.10 + hash3(i, 7, 2) * 0.13, Math.sin(a) * rr);
+      d.rotation.set(hash3(i, 1, 9) * 3.14, hash3(i, 4, 6) * 3.14, hash3(i, 6, 4) * 3.14);
+      d.scale.setScalar(0.85 + hash3(i, 8, 8) * 0.35);
+      d.updateMatrix(); m.setMatrixAt(i, d.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+    return m;
+  }
+  function eggHalf(seed) {
+    var g = new THREE.Group();
+    var white = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 12), mat(0xfcfaf3, 0.44));
+    white.scale.set(1, 0.74, 1);
+    var yolk = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 10), mat(0xf7b414, 0.52));
+    yolk.scale.set(1, 0.42, 1); yolk.position.y = 0.145;
+    g.add(white, yolk);
+    g.rotation.y = seed;
+    return g;
+  }
+
+  /* vegetables ------------------------------------------------------------ */
+  function broccoli(seed) {
+    var g = new THREE.Group();
+    var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.085, 0.30, 10), mat(0x9dbd67, 0.78));
+    stem.position.y = 0.15; g.add(stem);
+    var head = mat(0x3e8f2f, 0.9, { flatShading: true });
+    var deep = mat(0x286a1d, 0.94, { flatShading: true });
+    for (var i = 0; i < 7; i++) {
+      var a = (i / 7) * 6.283 + seed, r = i === 0 ? 0 : 0.115;
+      var blob = new THREE.Mesh(roughen(new THREE.IcosahedronGeometry(0.115 + hash3(i, seed, 1) * 0.05, 1), 0.05, 6),
+        i % 3 === 0 ? deep : head);
+      blob.position.set(Math.cos(a) * r, 0.31 + hash3(i, 2, seed) * 0.07, Math.sin(a) * r);
+      g.add(blob);
+    }
+    return g;
+  }
+  var carrot = function () {
+    return new THREE.Mesh(roughen(new THREE.CylinderGeometry(0.055, 0.075, 0.46, 8), 0.018, 8), mat(0xf0801a, 0.6));
+  };
+  function beetSlice() {
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.055, 22), mat(0x8e1e50, 0.4)));
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.058, 22), mat(0xc22a6c, 0.36)));
+    return g;
+  }
+  /* a curved shell: capsicum, onion and tomato are all cuts of a sphere */
+  function shell(color, r, thin, rough) {
+    var geo = new THREE.SphereGeometry(r, 14, 9, 0, Math.PI * 0.62, 0, Math.PI * 0.52);
+    var m = new THREE.Mesh(geo, mat(color, rough === undefined ? 0.34 : rough, { side: THREE.DoubleSide }));
+    m.scale.y = thin || 0.55;
+    return m;
+  }
+  var capsicum = function (c) { return shell(c, 0.21, 0.5, 0.28); };
+  var onionPetal = function () { return shell(0xcfa8e0, 0.19, 0.42, 0.4); };
+  var tomatoWedge = function () { return shell(0xe23a22, 0.19, 0.62, 0.26); };
+  function spinachLeaf(seed) {
+    var geo = roughen(new THREE.SphereGeometry(0.20, 12, 8), 0.09, 7);
+    geo.scale(1.35, 0.1, 0.9);
+    var m = new THREE.Mesh(geo, mat(0x2f7a37, 0.82, { side: THREE.DoubleSide }));
+    m.rotation.y = seed;
+    return m;
+  }
+  function lemonWedge() {
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.155, 0.075, 14, 1, false, 0, Math.PI * 0.55), mat(0xf5d016, 0.44)));
+    var skin = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.062, 14, 1, true, 0, Math.PI * 0.55), mat(0xcfa808, 0.6, { side: THREE.DoubleSide }));
+    g.add(skin);
+    return g;
+  }
+  function curdDollop(color) {
+    var m = new THREE.Mesh(roughen(new THREE.SphereGeometry(0.26, 18, 12), 0.05, 4), mat(color || 0xfbfaf4, 0.4));
+    m.scale.y = 0.5;
+    return m;
+  }
+  var makhaniDollop = function () { return curdDollop(0xe86a24); };
+
+  /* garnish: also the geometry used for the sprinkle burst -------------- */
+  var flakeGeo = null;
+  function flake() {
+    if (!flakeGeo) flakeGeo = roundedBox(0.055, 0.012, 0.038, 0.005, 2);
+    return flakeGeo;
+  }
+  function corianderScatter(n, radius, y) {
+    var m = new THREE.InstancedMesh(flake(), mat(0x69b83c, 0.7), n);
+    var d = new THREE.Object3D();
+    for (var i = 0; i < n; i++) {
+      var a = hash3(i, 3.3, 8.8) * 6.283, rr = Math.sqrt(hash3(i, 6.6, 1.1)) * radius;
+      d.position.set(Math.cos(a) * rr, y + hash3(i, 2, 2) * 0.05, Math.sin(a) * rr);
+      d.rotation.set(hash3(i, 9, 1) * 1.2, hash3(i, 1, 7) * 6.283, hash3(i, 5, 5) * 1.2);
+      d.updateMatrix(); m.setMatrixAt(i, d.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+    return m;
+  }
+
+  /* steam: three wavy tubes that drift and fade above hot food ----------- */
+  function steamRibbon(seed) {
+    var pts = [];
+    for (var i = 0; i <= 8; i++) {
+      var t = i / 8;
+      pts.push(new THREE.Vector3(
+        Math.sin(t * 4 + seed) * 0.18 * t,
+        t * 1.5,
+        Math.cos(t * 3.4 + seed * 1.7) * 0.16 * t));
+    }
+    var curve = new THREE.CatmullRomCurve3(pts);
+    return new THREE.Mesh(new THREE.TubeGeometry(curve, 22, 0.028, 5, false),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, depthWrite: false }));
+  }
+
+  /* ==========================================================================
+     The four rotations. Each declares its own accent (taken out of its own
+     food), its weighed components, and how to build its contents in 3D.
+     ====================================================================== */
+  var BOWLS = [
+    {
+      id: 'tikka', name: 'Chicken Tikka', tag: 'NON-VEG',
+      accent: { light: '#d6321c', dark: '#ff6a4d' }, swatch: '#db4a1c',
+      grainL: 'basmati rice', protL: 'chicken tikka',
+      cut:  { net: 620, grain: 130, prot: 120, p: 48, c: 55, f: 12, k: 520 },
+      bulk: { net: 810, grain: 250, prot: 190, p: 72, c: 94, f: 18, k: 825 },
+      items: [
+        ['Chicken tikka, charred', 120, '#db4a1c', 'Marinated in curd overnight, cooked dry.'],
+        ['Basmati rice', 130, '#f3efe1', 'Cooked weight, drained.'],
+        ['Broccoli', 110, '#3e8f2f', 'Steamed 4 minutes so it still bites back.'],
+        ['Beetroot + carrot', 100, '#c22a6c', 'Cut the same morning.'],
+        ['Curd, low fat', 150, '#fbfaf4', 'Set overnight in the kitchen, not bought in a tub.'],
+        ['Oil + masala', 10, '#8e5a1e', 'About 5 ml of oil. Masala is measured too — it counts.']
+      ],
+      build: function (L) {
+        L.grain.add(basmati());
+        for (var i = 0; i < 7; i++) {
+          var s = tikkaChunk(i), a = (i / 7) * 6.283 + 0.4;
+          s.position.set(Math.cos(a) * 0.36, 0.50 + i * 0.012, Math.sin(a) * 0.36);
+          s.rotation.y = -a + 0.3; L.prot.add(s);
+        }
+        for (var b = 0; b < 3; b++) {
+          var br = broccoli(b * 1.7), ba = -0.9 + b * 0.7;
+          br.position.set(Math.cos(ba) * 0.62, 0.34, Math.sin(ba) * 0.62);
+          br.scale.setScalar(0.9); L.veg.add(br);
+        }
+        for (var c = 0; c < 3; c++) {
+          var car = carrot();
+          car.position.set(-0.34 + c * 0.16, 0.40 + c * 0.05, -0.52);
+          car.rotation.set(1.5708, 0.2 * c, 0.35 + c * 0.1); L.veg.add(car);
+        }
+        for (var t = 0; t < 3; t++) {
+          var bs = beetSlice();
+          bs.position.set(0.52 - t * 0.30, 0.40 + t * 0.05, 0.46 - t * 0.08);
+          bs.rotation.set(1.25 + t * 0.18, 0.4 * t, 0.22); L.veg.add(bs);
+        }
+        var cd = curdDollop(); cd.position.set(-0.62, 0.42, 0.18); L.top.add(cd);
+        var gr = corianderScatter(30, 0.72, 0.50); L.top.add(gr);
+      },
+      anchors: { prot: [0.36, 0.56, 0.22], grain: [0, 0.36, 0], veg: [0.38, 0.46, 0.58],
+                 veg2: [-0.28, 0.44, -0.50], top: [-0.62, 0.48, 0.18], masala: [1.02, 0.34, 0.26] }
+    },
+    {
+      id: 'paneer', name: 'Paneer Makhani', tag: 'VEG',
+      accent: { light: '#c2700a', dark: '#ffab3a' }, swatch: '#e86a24',
+      grainL: 'jeera rice', protL: 'paneer, grilled',
+      cut:  { net: 610, grain: 130, prot: 140, p: 38, c: 54, f: 20, k: 550 },
+      bulk: { net: 800, grain: 250, prot: 210, p: 56, c: 92, f: 30, k: 862 },
+      items: [
+        ['Paneer, grilled', 140, '#f9f2dd', 'Pressed, cubed and charred on a flat top.'],
+        ['Jeera rice', 130, '#f1e6cc', 'Cooked weight. Cumin is weighed with it.'],
+        ['Capsicum + onion', 110, '#3e8f2f', 'Three colours of capsicum, not one.'],
+        ['Tomato makhani', 90, '#e86a24', 'Tomato and cashew, no cream.'],
+        ['Curd, low fat', 130, '#fbfaf4', 'Set overnight in the kitchen.'],
+        ['Oil + masala', 10, '#8e5a1e', 'About 5 ml of oil. Masala is measured too — it counts.']
+      ],
+      build: function (L) {
+        L.grain.add(jeeraRice());
+        for (var i = 0; i < 7; i++) {
+          var s = paneerCube(i), a = (i / 7) * 6.283 + 0.9;
+          s.position.set(Math.cos(a) * 0.36, 0.50 + i * 0.012, Math.sin(a) * 0.36);
+          s.rotation.y = -a + 0.3; s.rotation.z = (hash3(i, 3, 1) - 0.5) * 0.2; L.prot.add(s);
+        }
+        var cols = [0x3e9130, 0xd8241e, 0xf0bd14, 0x3e9130, 0xd8241e];
+        for (var c = 0; c < 5; c++) {
+          var cap = capsicum(cols[c]), ca = (c / 5) * 6.283;
+          cap.position.set(Math.cos(ca) * 0.58, 0.38 + c * 0.03, Math.sin(ca) * 0.58);
+          cap.rotation.set(hash3(c, 1, 2) * 1.4, ca, hash3(c, 4, 1) * 0.8); L.veg.add(cap);
+        }
+        for (var o = 0; o < 3; o++) {
+          var on = onionPetal();
+          on.position.set(-0.30 + o * 0.30, 0.42 + o * 0.04, -0.42 + o * 0.10);
+          on.rotation.set(1.1 + o * 0.3, o * 1.2, 0.3); L.veg.add(on);
+        }
+        var mk = makhaniDollop(); mk.position.set(-0.60, 0.42, 0.20); mk.scale.setScalar(1.05); L.top.add(mk);
+        var cd = curdDollop(); cd.position.set(0.46, 0.42, -0.44); cd.scale.setScalar(0.8); L.top.add(cd);
+        L.top.add(corianderScatter(34, 0.74, 0.52));
+      },
+      anchors: { prot: [0.36, 0.56, 0.22], grain: [0, 0.36, 0], veg: [0.42, 0.46, 0.40],
+                 veg2: [-0.26, 0.46, -0.42], top: [-0.60, 0.48, 0.20], masala: [1.02, 0.34, 0.26] }
+    },
+    {
+      id: 'chana', name: 'Chana + Beet', tag: 'VEGAN',
+      accent: { light: '#bf1b53', dark: '#ff5f97' }, swatch: '#c22a6c',
+      grainL: 'bajra millet', protL: 'kabuli chana',
+      cut:  { net: 650, grain: 140, prot: 200, p: 30, c: 76, f: 13, k: 540 },
+      bulk: { net: 850, grain: 260, prot: 280, p: 44, c: 118, f: 19, k: 820 },
+      items: [
+        ['Kabuli chana', 200, '#e4b455', 'Soaked 8 hours, boiled, never from a tin.'],
+        ['Bajra millet', 140, '#d9c48c', 'Cooked weight. Lower GI than rice.'],
+        ['Beetroot', 100, '#c22a6c', 'Roasted, not boiled. This is where the colour comes from.'],
+        ['Spinach', 90, '#2f7a37', 'Wilted in the pan for 40 seconds.'],
+        ['Tomato + onion', 110, '#e23a22', 'The base masala, weighed after it reduces.'],
+        ['Oil + masala', 10, '#8e5a1e', 'About 5 ml of oil. Masala is measured too — it counts.']
+      ],
+      build: function (L) {
+        L.grain.add(millet());
+        L.prot.add(chickpeas(46));
+        for (var t = 0; t < 4; t++) {
+          var bs = beetSlice();
+          bs.position.set(0.56 - t * 0.32, 0.38 + t * 0.045, 0.44 - t * 0.22);
+          bs.rotation.set(1.25 + t * 0.16, 0.4 * t, 0.22); L.veg.add(bs);
+        }
+        for (var s = 0; s < 4; s++) {
+          var lf = spinachLeaf(s * 1.4);
+          lf.position.set(Math.cos(s * 1.7) * 0.56, 0.36 + s * 0.03, Math.sin(s * 1.7) * 0.56);
+          lf.rotation.z = (hash3(s, 2, 2) - 0.5) * 0.5; L.veg.add(lf);
+        }
+        for (var w = 0; w < 3; w++) {
+          var tw = tomatoWedge();
+          tw.position.set(-0.34 + w * 0.34, 0.44 + w * 0.03, -0.48);
+          tw.rotation.set(1.2 + w * 0.25, w * 1.1, 0.25); L.top.add(tw);
+        }
+        L.top.add(corianderScatter(40, 0.76, 0.50));
+      },
+      anchors: { prot: [0.30, 0.50, 0.24], grain: [0, 0.36, 0], veg: [0.40, 0.44, 0.36],
+                 veg2: [-0.34, 0.42, -0.46], top: [-0.30, 0.50, -0.46], masala: [1.02, 0.34, 0.26] }
+    },
+    {
+      id: 'egg', name: 'Egg + Millet', tag: 'EGG',
+      accent: { light: '#167a4e', dark: '#4fd18f' }, swatch: '#f7b414',
+      grainL: 'bajra millet', protL: 'boiled egg',
+      cut:  { net: 580, grain: 130, prot: 150, p: 36, c: 46, f: 18, k: 490 },
+      bulk: { net: 770, grain: 240, prot: 225, p: 54, c: 80, f: 27, k: 779 },
+      items: [
+        ['Boiled egg, 3 halves', 150, '#f7b414', 'Seven minutes, so the yolk is still soft.'],
+        ['Bajra millet', 130, '#d9c48c', 'Cooked weight. Lower GI than rice.'],
+        ['Spinach', 100, '#2f7a37', 'Wilted in the pan for 40 seconds.'],
+        ['Tomato + onion', 90, '#e23a22', 'The base masala, weighed after it reduces.'],
+        ['Curd, low fat', 100, '#fbfaf4', 'Set overnight in the kitchen.'],
+        ['Oil + masala', 10, '#8e5a1e', 'About 5 ml of oil. Masala is measured too — it counts.']
+      ],
+      build: function (L) {
+        L.grain.add(millet());
+        for (var i = 0; i < 3; i++) {
+          var e = eggHalf(i * 1.9), a = (i / 3) * 6.283 + 0.5;
+          e.position.set(Math.cos(a) * 0.36, 0.48, Math.sin(a) * 0.36); L.prot.add(e);
+        }
+        for (var s = 0; s < 5; s++) {
+          var lf = spinachLeaf(s * 1.25);
+          lf.position.set(Math.cos(s * 1.5) * 0.58, 0.36 + s * 0.025, Math.sin(s * 1.5) * 0.58);
+          lf.rotation.z = (hash3(s, 3, 1) - 0.5) * 0.5; L.veg.add(lf);
+        }
+        for (var w = 0; w < 3; w++) {
+          var tw = tomatoWedge();
+          tw.position.set(-0.36 + w * 0.36, 0.44 + w * 0.03, -0.46);
+          tw.rotation.set(1.2 + w * 0.25, w * 1.1, 0.25); L.veg.add(tw);
+        }
+        var cd = curdDollop(); cd.position.set(-0.58, 0.42, 0.24); L.top.add(cd);
+        var lw = lemonWedge(); lw.position.set(0.58, 0.42, 0.30); lw.rotation.set(1.5, 0.8, 0.4); L.top.add(lw);
+        L.top.add(corianderScatter(28, 0.70, 0.50));
+      },
+      anchors: { prot: [0.36, 0.54, 0.22], grain: [0, 0.36, 0], veg: [0.40, 0.44, 0.42],
+                 veg2: [-0.34, 0.46, -0.44], top: [-0.58, 0.48, 0.24], masala: [1.02, 0.34, 0.26] }
+    }
+  ];
+  var BY_ID = {}; BOWLS.forEach(function (b) { BY_ID[b.id] = b; });
+
+  /* ---------------------------- printed macro sticker (canvas texture) ---- */
+  function labelTexture(bowl, size) {
+    var d = bowl[size];
+    var c = document.createElement('canvas'); c.width = 640; c.height = 400;
+    var x = c.getContext('2d');
+    x.fillStyle = '#f4f5f1'; x.fillRect(0, 0, 640, 400);
+    x.fillStyle = bowl.accent.light; x.fillRect(0, 0, 640, 96);
+    x.fillStyle = '#f4f5f1';
+    x.font = '700 44px Helvetica, Arial, sans-serif';
+    x.fillText(bowl.name.toUpperCase(), 28, 50);
+    x.font = '500 21px Helvetica, Arial, sans-serif';
+    x.fillText('EATMAKRO', 28, 80);
+    x.textAlign = 'right'; x.fillText(size.toUpperCase() + ' · ' + bowl.tag, 612, 80); x.textAlign = 'left';
+
+    x.fillStyle = '#0f1a22';
+    x.font = '700 120px Helvetica, Arial, sans-serif';
+    x.fillText(String(d.p), 28, 226);
+    var w = x.measureText(String(d.p)).width;
+    x.font = '500 30px Helvetica, Arial, sans-serif';
+    x.fillText('g protein', 28 + w + 14, 226);
+
+    var rows = [['Carbs', d.c, 120, ' g', '#0d6b60'], ['Fat', d.f, 40, ' g', '#d9761f'],
+                ['Energy', d.k, 900, ' kcal', '#0f1a22']];
+    x.font = '500 23px Helvetica, Arial, sans-serif';
+    for (var i = 0; i < 3; i++) {
+      var y = 274 + i * 36;
+      x.fillStyle = '#0f1a22';
+      x.fillText(rows[i][0], 28, y); x.fillText(rows[i][1] + rows[i][3], 466, y);
+      x.fillStyle = 'rgba(15,26,34,0.13)'; x.fillRect(136, y - 17, 300, 18);
+      x.fillStyle = rows[i][4];
+      x.fillRect(136, y - 17, Math.min(300, (rows[i][1] / rows[i][2]) * 300), 18);
+    }
+    x.fillStyle = '#0f1a22'; x.fillRect(0, 372, 640, 28);
+    x.fillStyle = '#f4f5f1'; x.font = '500 17px Helvetica, Arial, sans-serif';
+    x.fillText('WEIGHED HYD·0417   ·   NET ' + d.net + ' g   ·   EAT WITHIN 6 h', 28, 392);
+    var tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8;
+    return tex;
+  }
+
+  return {
+    BOWLS: BOWLS, BY_ID: BY_ID, labelTexture: labelTexture,
+    steelBowl: steelBowl, steelLid: steelLid, steamRibbon: steamRibbon,
+    contactShadow: contactShadow, studioEnv: studioEnv, flake: flake, mat: mat,
+    hash3: hash3, clamp01: clamp01, ramp: ramp, lerp: lerp, ease: ease
+  };
+})();
+</script>
+
+<script>
+/* =============================================================================
+   App: scene boot, section-anchored scroll choreography, bowl swap morph,
+   theme, and the pre-launch list.
+   ========================================================================== */
+(function () {
+  'use strict';
+  var EM = window.EatMakro;
+  var BOWLS = EM.BOWLS, BY_ID = EM.BY_ID;
+  var clamp01 = EM.clamp01, ramp = EM.ramp, lerp = EM.lerp, ease = EM.ease, hash3 = EM.hash3;
+
+  var root = document.documentElement;
+  var stage = document.getElementById('stage');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var curId = 'tikka', size = 'cut';
+  var renderer, scene, camera, meal, bowlLayer, lidLayer, labelLayer, shadowLayer, labelMesh, steam, sprinkle;
+  var contents = {}, active = null, outgoing = null;
+  var swapT = 1, swapSpin = 0;
+  var p = 0, pTarget = 0, running = true, v3 = new THREE.Vector3();
+  var SEC = {}, maxScroll = 1;
+
+  /* ------------------------------------------------------------ choreography */
+  var CAMK = [
+    { sel: null,        f: 0,    pos: [ 0.28, 2.30, 4.05], tgt: [0, 0.44, 0] },
+    { sel: '#choose',   f: 0.45, pos: [ 1.00, 2.05, 3.85], tgt: [0, 0.50, 0] },
+    { sel: '#box',      f: 0.26, pos: [ 0.00, 2.45, 5.85], tgt: [0, 1.35, 0] },
+    { sel: '#box',      f: 0.86, pos: [-0.45, 1.95, 4.55], tgt: [0, 0.68, 0] },
+    { sel: '#label',    f: 0.50, pos: [ 1.95, 3.40, 2.55], tgt: [0, 0.45, 0] },
+    { sel: '#portions', f: 0.50, pos: [ 0.10, 1.75, 3.55], tgt: [0, 0.50, 0] },
+    { sel: '#plans',    f: 0.60, pos: [ 0.00, 2.05, 4.35], tgt: [0, 0.80, 0] },
+    { sel: '#where',    f: 0.50, pos: [-1.95, 1.75, 4.30], tgt: [0, 0.72, 0] },
+    { sel: '#hold',     f: 0.95, pos: [ 0.35, 1.30, 6.25], tgt: [0, 0.62, 0] }
+  ];
+  var EXPLODE = { grain: [0, 0.52, 0], prot: [0.10, 1.24, 0.02], veg: [-0.14, 1.98, -0.04], top: [0.06, 2.62, 0.06] };
+  var SECS = ['#choose', '#box', '#label', '#portions', '#plans', '#where', '#hold'];
+
+  function measure() {
+    maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    SECS.forEach(function (s) {
+      var el = document.querySelector(s);
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      SEC[s] = { top: r.top + window.scrollY, h: r.height };
+    });
+    var prev = 0;
+    CAMK.forEach(function (k) {
+      var v = 0;
+      if (k.sel && SEC[k.sel]) {
+        var s = SEC[k.sel];
+        v = clamp01((k.f * (s.h + window.innerHeight) + s.top - window.innerHeight) / maxScroll);
+      }
+      k.p = Math.max(v, prev + 0.004);
+      prev = k.p;
+    });
+  }
+  function secProg(sel) {
+    var s = SEC[sel];
+    if (!s) return 0;
+    return clamp01((window.scrollY + window.innerHeight - s.top) / (s.h + window.innerHeight));
+  }
+  function sampleCam(q) {
+    var i = 0;
+    while (i < CAMK.length - 2 && q > CAMK[i + 1].p) i++;
+    var a = CAMK[i], b = CAMK[i + 1], t = ease(clamp01((q - a.p) / (b.p - a.p || 1)));
+    return {
+      pos: [lerp(a.pos[0], b.pos[0], t), lerp(a.pos[1], b.pos[1], t), lerp(a.pos[2], b.pos[2], t)],
+      tgt: [lerp(a.tgt[0], b.tgt[0], t), lerp(a.tgt[1], b.tgt[1], t), lerp(a.tgt[2], b.tgt[2], t)]
+    };
+  }
+
+  /* ------------------------------------------------------------------ scene */
+  function contentsFor(id) {
+    if (contents[id]) return contents[id];
+    var g = new THREE.Group();
+    var L = {};
+    ['grain', 'prot', 'veg', 'top'].forEach(function (n) { L[n] = new THREE.Group(); g.add(L[n]); });
+    BY_ID[id].build(L);
+    g.userData.L = L;
+    g.visible = false;
+    meal.add(g);
+    contents[id] = g;
+    return g;
+  }
+
+  function initScene() {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    stage.appendChild(renderer.domElement);
+
+    scene = new THREE.Scene();
+    scene.environment = EM.studioEnv(renderer);
+    camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x63707c, 0.55));
+    var key = new THREE.DirectionalLight(0xfff4e2, 2.1); key.position.set(3.2, 5.4, 2.6);
+    var fill = new THREE.DirectionalLight(0xd6e6ff, 0.62); fill.position.set(-4, 1.6, 2.2);
+    var rim = new THREE.DirectionalLight(0xffffff, 1.2); rim.position.set(-1.4, 2.2, -4.2);
+    scene.add(key, fill, rim);
+
+    meal = new THREE.Group();
+    scene.add(meal);
+
+    shadowLayer = new THREE.Group();
+    shadowLayer.add(EM.contactShadow(2.4, 0.85));
+    shadowLayer.position.y = -0.01;
+    bowlLayer = new THREE.Group(); bowlLayer.add(EM.steelBowl());
+    lidLayer = new THREE.Group(); lidLayer.add(EM.steelLid()); lidLayer.position.y = 0.70;
+    labelLayer = new THREE.Group();
+    labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.28, 0.80),
+      new THREE.MeshStandardMaterial({ map: EM.labelTexture(BY_ID[curId], 'cut'), roughness: 0.85, transparent: true, side: THREE.DoubleSide }));
+    labelMesh.rotation.x = -Math.PI / 2; labelMesh.position.y = 0.88; labelMesh.scale.setScalar(0.86);
+    labelLayer.add(labelMesh);
+    meal.add(shadowLayer, bowlLayer, lidLayer, labelLayer);
+
+    /* steam above hot food, only while the box is open */
+    steam = new THREE.Group();
+    for (var s = 0; s < 3; s++) {
+      var rib = EM.steamRibbon(s * 2.1);
+      rib.position.set(-0.30 + s * 0.30, 0.55, -0.10 + s * 0.16);
+      steam.add(rib);
+    }
+    meal.add(steam);
+
+    /* garnish burst, thrown in when the bowl is swapped */
+    sprinkle = new THREE.InstancedMesh(EM.flake(), EM.mat(0x69b83c, 0.7, { transparent: true, opacity: 0 }), 90);
+    sprinkle.visible = false;
+    meal.add(sprinkle);
+
+    active = contentsFor(curId);
+    active.visible = true;
+    resize();
+  }
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  /* --------------------------------------------------------------- the frame */
+  var t0 = performance.now(), sprDummy = new THREE.Object3D();
+  function frame() {
+    if (!running) return;
+    requestAnimationFrame(frame);
+    var t = (performance.now() - t0) / 1000;
+    p += (pTarget - p) * 0.09;
+
+    var sBox = secProg('#box'), sPlans = secProg('#plans'), sHold = secProg('#hold');
+    var e = ease(ramp(sBox, 0.06, 0.34) * (1 - ramp(sBox, 0.60, 0.88)));
+    var seal = ease(ramp(sPlans, 0.05, 0.55));
+    var stick = ease(ramp(sPlans, 0.50, 0.90));
+    var drift = ramp(sHold, 0.25, 0.85);
+
+    /* bowl swap morph: old contents sink and shrink, new ones rise in */
+    if (swapT < 1) swapT = Math.min(1, swapT + 0.022);
+    var kOld = 1 - clamp01(swapT / 0.44);
+    var kNew = ease(clamp01((swapT - 0.40) / 0.60));
+    swapSpin = swapT < 1 ? ease(swapT) * 6.2832 : 0;
+    if (outgoing) {
+      outgoing.visible = kOld > 0.01;
+      outgoing.scale.setScalar(Math.max(0.001, kOld));
+      outgoing.position.y = -0.55 * (1 - kOld);
+      if (kOld <= 0.01) { outgoing.visible = false; outgoing = null; }
+    }
+    active.scale.setScalar(Math.max(0.001, kNew));
+    active.position.y = -0.55 * (1 - kNew);
+
+    /* explode / reassemble */
+    var L = active.userData.L;
+    for (var k in EXPLODE) {
+      var v = EXPLODE[k];
+      L[k].position.set(v[0] * e, v[1] * e, v[2] * e);
+    }
+    bowlLayer.position.y = -0.38 * e;
+
+    /* seal + label print */
+    lidLayer.position.y = lerp(3.4, 0.70, seal);
+    lidLayer.visible = seal > 0.002;
+    lidLayer.rotation.y = (1 - seal) * 1.4;
+    labelLayer.visible = stick > 0.01;
+    labelMesh.scale.setScalar(Math.max(0.001, stick) * 0.86);
+    labelMesh.position.y = lerp(1.35, 0.88, stick);
+
+    /* steam only while the box is open and unexploded */
+    var steamA = (1 - ramp(sBox, 0, 0.22)) * (1 - seal) * (1 - drift) * (reduce ? 0.6 : 1);
+    steam.visible = steamA > 0.01;
+    for (var si = 0; si < steam.children.length; si++) {
+      var rb = steam.children[si];
+      var ph = (t * 0.34 + si * 0.33) % 1;
+      rb.material.opacity = 0.16 * steamA * Math.sin(ph * Math.PI);
+      rb.scale.set(1, 0.5 + ph * 0.9, 1);
+      rb.position.y = 0.55 + ph * 0.35;
+      rb.rotation.y = t * 0.25 + si;
+    }
+
+    /* garnish burst during a swap */
+    if (swapT < 1) {
+      var sp = clamp01((swapT - 0.34) / 0.62);
+      sprinkle.visible = sp > 0.01;
+      sprinkle.material.opacity = 0.95 * (1 - ramp(sp, 0.78, 1));
+      for (var i = 0; i < 90; i++) {
+        var dly = hash3(i, 5, 5) * 0.4;
+        var kk = ease(clamp01((sp - dly) / 0.6));
+        var a = hash3(i, 1, 3) * 6.2832, rr = Math.sqrt(hash3(i, 4, 2)) * 0.78;
+        sprDummy.position.set(Math.cos(a) * rr, lerp(2.9, 0.56 + hash3(i, 7, 1) * 0.08, kk), Math.sin(a) * rr);
+        sprDummy.rotation.set(kk * 6 + a, a * 2, kk * 4);
+        sprDummy.scale.setScalar(1);
+        sprDummy.updateMatrix();
+        sprinkle.setMatrixAt(i, sprDummy.matrix);
+      }
+      sprinkle.instanceMatrix.needsUpdate = true;
+    } else if (sprinkle.visible) {
+      sprinkle.visible = false;
+    }
+
+    /* root motion */
+    var idle = reduce ? 0 : 1;
+    meal.rotation.y = -0.55 + p * 2.7 + swapSpin + Math.sin(t * 0.55) * 0.04 * idle;
+    meal.rotation.z = Math.sin(sBox * Math.PI) * 0.03;
+    meal.position.y = Math.sin(t * 0.7) * 0.025 * idle + drift * 0.5;
+    meal.scale.setScalar(1 - drift * 0.22);
+    shadowLayer.children[0].material.opacity = 0.85 * (1 - drift);
+    shadowLayer.position.y = -0.01 - meal.position.y * 0.9;
+
+    var dolly = Math.min(2.2, Math.max(1, 1.16 / camera.aspect));
+    var c = sampleCam(p);
+    camera.position.set(c.pos[0] * dolly, c.tgt[1] + (c.pos[1] - c.tgt[1]) * dolly, c.pos[2] * dolly);
+    camera.lookAt(c.tgt[0], c.tgt[1], c.tgt[2]);
+
+    renderer.render(scene, camera);
+    projectAnnotations(ramp(sBox, 0.18, 0.30) * (1 - ramp(sBox, 0.56, 0.74)));
+    updateRail();
+  }
+
+  /* ----------------------------- HTML chips projected onto the 3D anchors --- */
+  var chips = [], lines = [], svg, rect = null, rectAge = 0;
+  var OFF = [[-146, 4], [140, 10], [148, -16], [-150, 16], [138, -12], [-142, 18]];
+  var LAY = ['prot', 'grain', 'veg', 'veg', 'top', null];
+  var AKEY = ['prot', 'grain', 'veg', 'veg2', 'top', 'masala'];
+
+  function buildChips() {
+    svg = document.getElementById('annoLines');
+    var host = document.getElementById('annos');
+    for (var i = 0; i < 6; i++) {
+      var el = document.createElement('div');
+      el.className = 'chip'; el.style.opacity = '0';
+      host.appendChild(el); chips.push(el);
+      var ln = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      ln.setAttribute('fill', 'none'); ln.setAttribute('stroke', 'currentColor');
+      ln.setAttribute('stroke-width', '1'); ln.setAttribute('stroke-dasharray', '3 3');
+      svg.appendChild(ln); lines.push(ln);
+    }
+  }
+  function fillChips() {
+    var items = BY_ID[curId].items;
+    for (var i = 0; i < 6; i++) {
+      chips[i].innerHTML = '<b>' + items[i][1] + ' g</b><span>' + items[i][0].split(',')[0] + '</span>';
+    }
+  }
+  function projectAnnotations(vis) {
+    if (window.innerWidth < 901 || swapT < 1) vis = 0;
+    if (vis < 0.01) {
+      if (chips[0].style.opacity !== '0') {
+        for (var z = 0; z < 6; z++) { chips[z].style.opacity = '0'; lines[z].setAttribute('d', ''); }
+      }
+      return;
+    }
+    if (--rectAge < 0) { rect = stage.getBoundingClientRect(); rectAge = 30; }
+    var anchors = BY_ID[curId].anchors, L = active.userData.L;
+    for (var i = 0; i < 6; i++) {
+      var a = anchors[AKEY[i]];
+      v3.set(a[0], a[1], a[2]);
+      var lay = LAY[i] ? L[LAY[i]] : bowlLayer;
+      v3.add(lay.position);
+      if (LAY[i]) v3.multiplyScalar(active.scale.x).add(new THREE.Vector3(0, active.position.y, 0));
+      meal.localToWorld(v3);
+      v3.project(camera);
+      var ax = rect.left + (v3.x * 0.5 + 0.5) * rect.width;
+      var ay = rect.top + (-v3.y * 0.5 + 0.5) * rect.height;
+      var cx = ax + OFF[i][0], cy = ay + OFF[i][1];
+      chips[i].style.transform = 'translate(-50%,-50%) translate(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px)';
+      chips[i].style.opacity = vis.toFixed(2);
+      var mid = OFF[i][0] > 0 ? cx - 46 : cx + 46;
+      lines[i].setAttribute('d', 'M' + ax.toFixed(1) + ' ' + ay.toFixed(1) + 'L' + mid.toFixed(1) + ' ' + cy.toFixed(1));
+      lines[i].setAttribute('opacity', vis.toFixed(2));
+    }
+  }
+
+  /* ------------------------------------------------------------------- rail */
+  var railRead = document.getElementById('railRead'), railB = railRead.querySelector('b'), lastG = -1;
+  function updateRail() {
+    var g = Math.round(p * BY_ID[curId][size].net);
+    if (g !== lastG) { railB.textContent = g; lastG = g; }
+    railRead.style.transform = 'translateY(' + (54 + p * (window.innerHeight - 108)).toFixed(0) + 'px)';
+  }
+
+  /* ================================================================== theme */
+  var themeBtn = document.getElementById('themeBtn');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function applyAccent() {
+    var b = BY_ID[curId], a = isDark() ? b.accent.dark : b.accent.light;
+    root.style.setProperty('--accent', a);
+    if (renderer) renderer.toneMappingExposure = isDark() ? 0.94 : 1.06;
+    themeBtn.setAttribute('aria-label', isDark() ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+  try {
+    var saved = localStorage.getItem('em-theme');
+    if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+  } catch (err) { /* private mode: fall back to the OS preference */ }
+  themeBtn.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('em-theme', next); } catch (err) {}
+    applyAccent();
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyAccent);
+
+  /* ============================================================ bowl + copy */
+  var picker = document.getElementById('bowlPicker');
+  var specBody = document.getElementById('specBody'), specCap = document.getElementById('specCap');
+  var brand = document.getElementById('brand');
+  var el = function (id) { return document.getElementById(id); };
+
+  function renderPicker() {
+    picker.innerHTML = '';
+    BOWLS.forEach(function (b) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bowl';
+      btn.style.setProperty('--bc', b.accent.light);
+      btn.setAttribute('aria-pressed', String(b.id === curId));
+      btn.innerHTML =
+        '<span class="swatch" style="background:' + b.swatch + '"></span>' +
+        '<span class="bt">' + b.tag + '</span>' +
+        '<span class="bn">' + b.name + '</span>' +
+        '<span class="bm">' + b.cut.p + ' g protein &#183; ' + b.cut.k + ' kcal</span>';
+      btn.addEventListener('click', function () { selectBowl(b.id); });
+      picker.appendChild(btn);
+    });
+  }
+  function renderSpec() {
+    var b = BY_ID[curId];
+    specBody.innerHTML = b.items.map(function (it) {
+      return '<tr><th scope="row"><span class="dot" style="background:' + it[2] + '"></span>' + it[0] +
+             '<div class="note">' + it[3] + '</div></th><td class="g mono">' + it[1] + ' g</td></tr>';
+    }).join('');
+    specCap.textContent = b.name + ' · ' + size + ' portion · cooked weights · batch HYD·0417';
+    el('specNet').textContent = b[size].net + ' g';
+  }
+  function renderNumbers() {
+    var b = BY_ID[curId], d = b[size];
+    el('hStatP').textContent = d.p + ' g';
+    el('hStatName').textContent = b.name;
+    el('hStatK').textContent = String(d.k);
+    el('mkBox').textContent = d.net + ' g';
+    el('mkLabel').textContent = d.p + ' g';
+    el('mkPort').textContent = b.cut.grain + ' g / ' + b.bulk.grain + ' g';
+    el('mP').textContent = d.p + ' g'; el('mC').textContent = d.c + ' g';
+    el('mF').textContent = d.f + ' g'; el('mK').textContent = String(d.k);
+    el('bP').style.width = Math.min(100, d.p / 90 * 100) + '%';
+    el('bC').style.width = Math.min(100, d.c / 120 * 100) + '%';
+    el('bF').style.width = Math.min(100, d.f / 40 * 100) + '%';
+    el('bK').style.width = Math.min(100, d.k / 900 * 100) + '%';
+    el('mName').textContent = b.name.toUpperCase();
+    el('mNet').textContent = d.net + ' g';
+    el('pGrain').textContent = d.grain + ' g'; el('pGrainL').textContent = b.grainL;
+    el('pProt').textContent = d.prot + ' g'; el('pProtL').textContent = b.protL;
+    el('pNet').textContent = d.net + ' g';
+  }
+  function refreshLabel() {
+    if (!labelMesh) return;
+    labelMesh.material.map.dispose();
+    labelMesh.material.map = EM.labelTexture(BY_ID[curId], size);
+    labelMesh.material.needsUpdate = true;
+  }
+  function tipLogo() {
+    brand.classList.add('tip');
+    setTimeout(function () { brand.classList.remove('tip'); }, 760);
+  }
+
+  function selectBowl(id) {
+    if (id === curId || swapT < 0.6) return;
+    outgoing = active;
+    curId = id;
+    active = contentsFor(id);
+    active.visible = true;
+    active.scale.setScalar(0.001);
+    swapT = 0;
+    Array.prototype.forEach.call(picker.children, function (btn, i) {
+      btn.setAttribute('aria-pressed', String(BOWLS[i].id === id));
+    });
+    var sel = el('fBowl'); if (sel) sel.value = BY_ID[id].name;
+    applyAccent(); renderSpec(); renderNumbers(); refreshLabel(); fillChips(); tipLogo();
+    measure();
+  }
+  function setSize(s) {
+    size = s;
+    el('bCut').setAttribute('aria-pressed', String(s === 'cut'));
+    el('bBulk').setAttribute('aria-pressed', String(s === 'bulk'));
+    renderSpec(); renderNumbers(); refreshLabel();
+  }
+  el('bCut').addEventListener('click', function () { setSize('cut'); });
+  el('bBulk').addEventListener('click', function () { setSize('bulk'); });
+
+  /* ------------------------------------------------------------- lifecycle */
+  function onScroll() { pTarget = clamp01(window.scrollY / maxScroll); }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () { resize(); measure(); rectAge = 0; onScroll(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) running = false;
+    else if (!running) { running = true; t0 = performance.now(); frame(); }
+  });
+
+  /* --------------------------------------------------------------- marquee */
+  (function () {
+    var bits = ['WEIGHED, NOT GUESSED', '4 BOWLS', 'CHICKEN TIKKA', 'PANEER MAKHANI',
+                'CHANA + BEET', 'EGG + MILLET', 'RETURNABLE STEEL', '5 ml OIL', '12:30–1:15'];
+    var out = '';
+    for (var r = 0; r < 2; r++) {
+      for (var i = 0; i < bits.length; i++) {
+        out += '<span>' + (i % 3 === 1 ? '<em>' + bits[i] + '</em>' : bits[i]) + '</span>';
+      }
+    }
+    el('mqTrack').innerHTML = out;
+  })();
+
+  /* ---------------------------------------------------------------- loader */
+  (function () {
+    var box = el('load'), bar = el('lbar'), num = el('lnum'), stat = el('lstat');
+    var steps = ['Zeroing the scale', 'Weighing components', 'Printing the label'];
+    var start = performance.now(), DUR = 1500;
+    (function tick() {
+      var k = clamp01((performance.now() - start) / DUR);
+      bar.style.width = (k * 100).toFixed(1) + '%';
+      num.textContent = Math.round(k * 620) + ' g';
+      stat.textContent = steps[Math.min(2, Math.floor(k * 3))];
+      if (k < 1) { requestAnimationFrame(tick); return; }
+      box.classList.add('done');
+      setTimeout(function () { box.style.display = 'none'; }, 520);
+    })();
+  })();
+
+  /* -------------------------------------------------------------------- go */
+  renderPicker();
+  renderSpec();
+  renderNumbers();
+  (function () {
+    var sel = el('fBowl');
+    sel.innerHTML = BOWLS.map(function (b) { return '<option>' + b.name + '</option>'; }).join('');
+  })();
+  measure();
+  try {
+    initScene();
+    buildChips();
+    fillChips();
+    applyAccent();
+    onScroll();
+    p = pTarget;
+    frame();
+    /* the other three rotations are built just after first paint, so the
+       first frame is not held up by geometry the visitor cannot see yet */
+    setTimeout(function () {
+      BOWLS.forEach(function (b) { if (b.id !== curId) contentsFor(b.id); });
+    }, 400);
+  } catch (err) {
+    stage.style.display = 'none';
+    document.querySelector('main').style.paddingRight = 'var(--gutter)';
+    applyAccent();
+    console.error('EatMakro scene failed to start:', err);
+  }
+})();
+</script>
+
+<script>
+/* =============================================================================
+   Hold a slot — writes to the artifact's document store, shows a live count.
+   The page never renders anyone else's address; it only reads the collection
+   size. Degrades cleanly when the store is unreachable.
+   ========================================================================== */
+(function () {
+  'use strict';
+  var form = document.getElementById('holdForm');
+  var email = document.getElementById('fEmail'), area = document.getElementById('fArea');
+  var bowl = document.getElementById('fBowl'), portion = document.getElementById('fPortion');
+  var submit = document.getElementById('fSubmit');
+  var countEl = document.getElementById('fCount'), saidEl = document.getElementById('fSaid');
+  var store = null, held = null, done = false;
+
+  function say(msg, bad) { saidEl.textContent = msg; saidEl.className = 'said mono' + (bad ? ' bad' : ''); }
+  function renderCount() {
+    if (held === null) { countEl.innerHTML = '&#160;'; return; }
+    countEl.innerHTML = held === 0 ? 'No slots held yet. Be the first.'
+      : '<b>' + held + '</b> ' + (held === 1 ? 'slot' : 'slots') + ' held so far.';
+  }
+
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('db').then(function (db) {
+      if (!db) return;
+      store = db;
+      db.collection('signups').limit(1000).onSnapshot(
+        function (snap) { held = snap.size; renderCount(); },
+        function () { held = null; renderCount(); });
+    }).catch(function () {});
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (done) return;
+    var v = email.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v)) {
+      say('That email is missing something. Check it and try again.', true);
+      email.focus(); return;
+    }
+    if (!store) { say('Sign-ups are not reachable from this view. Open the published page to hold a slot.', true); return; }
+    submit.disabled = true;
+    say('Holding…');
+    store.collection('signups').add({
+      email: v, area: area.value, bowl: bowl.value, portion: portion.value,
+      at: new Date().toISOString()
+    }).then(function () {
+      done = true;
+      submit.textContent = 'Slot held';
+      say('You are on the list. We will write to you before ' + area.value + ' opens.');
+    }).catch(function (err) {
+      submit.disabled = false;
+      say(err && err.code === 'quota_exceeded'
+        ? 'The pre-launch list is full for now. Try again in a few days.'
+        : 'That did not save. Try once more.', true);
+    });
+  });
+})();
+</script>

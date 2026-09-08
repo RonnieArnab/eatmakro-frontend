@@ -1,0 +1,2493 @@
+<title>EatMakro</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* ===== EatMakro tokens ====================================================
+   Neutrals are a cold prep-room grey-blue and never change. Every saturated
+   value on the page comes from the selected bowl, and is set on :root by the
+   theme layer at runtime. Accents are held a stop back from the raw food
+   colour so they still read as type on both grounds.
+   ======================================================================== */
+:root{
+  --paper:#dee4e9;
+  --paper-2:#eaeef2;
+  --paper-3:#f4f7f9;
+  --ink:#111a20;
+  --ink-60:rgba(17,26,32,.60);
+  --ink-32:rgba(17,26,32,.32);
+  --ink-14:rgba(17,26,32,.14);
+  --ink-07:rgba(17,26,32,.07);
+  --steel:#8794a0;
+  --veil:rgba(222,228,233,.90);
+
+  --accent:#a8452a;          /* replaced at runtime by the active bowl */
+
+  --font-display:"Bricolage Grotesque","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-scale:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --rail:58px;
+  --gutter:clamp(18px,4vw,72px);
+  --measure:34ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1216; --paper-2:#141c22; --paper-3:#1b242b; --ink:#dee6ec;
+    --ink-60:rgba(222,230,236,.62); --ink-32:rgba(222,230,236,.32);
+    --ink-14:rgba(222,230,236,.15); --ink-07:rgba(222,230,236,.07);
+    --steel:#6d7b87; --veil:rgba(12,18,22,.90);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1216; --paper-2:#141c22; --paper-3:#1b242b; --ink:#dee6ec;
+  --ink-60:rgba(222,230,236,.62); --ink-32:rgba(222,230,236,.32);
+  --ink-14:rgba(222,230,236,.15); --ink-07:rgba(222,230,236,.07);
+  --steel:#6d7b87; --veil:rgba(12,18,22,.90);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--font-display);font-size:17px;line-height:1.5;
+  font-variation-settings:"wdth" 96;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;transition:background-color .45s ease,color .45s ease;
+}
+a{color:inherit}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+::selection{background:var(--accent);color:#fff}
+.mono{font-family:var(--font-scale);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ---------- scale rail --------------------------------------------------- */
+.rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail);border-right:1px solid var(--ink-14);
+  background:var(--paper);z-index:40;transition:background-color .45s ease}
+.rail-ticks{position:absolute;inset:0;
+  background-image:
+    repeating-linear-gradient(to bottom,var(--ink-32) 0 1px,transparent 1px 8px),
+    repeating-linear-gradient(to bottom,var(--ink-32) 0 1px,transparent 1px 40px);
+  background-size:11px 100%,22px 100%;background-position:right 0 top 0;background-repeat:repeat-y;opacity:.68}
+.rail-read{position:absolute;left:6px;right:6px;padding:5px 0 6px;text-align:center;
+  background:var(--accent);color:#fff;border-radius:2px;font-family:var(--font-scale);
+  font-size:11px;font-variant-numeric:tabular-nums;line-height:1.1;will-change:transform;
+  transition:background-color .45s ease}
+.rail-read b{display:block;font-weight:500;font-size:13px}
+.rail-read span{display:block;font-size:9px;opacity:.82;letter-spacing:.06em}
+.rail-cap{position:absolute;left:0;right:0;bottom:14px;margin:0 auto;height:130px;text-align:center;
+  font-family:var(--font-scale);font-size:9px;color:var(--ink-32);letter-spacing:.18em;
+  writing-mode:vertical-rl;transform:rotate(180deg)}
+
+/* ---------- 3D stage ----------------------------------------------------- */
+.stage{position:fixed;top:0;right:0;bottom:0;width:38vw;min-width:360px;z-index:1;pointer-events:none}
+.stage canvas{display:block;width:100%;height:100%}
+.annos{position:fixed;inset:0;z-index:2;pointer-events:none}
+.annos svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.chip{position:absolute;transform:translate(-50%,-50%);background:var(--paper-2);border:1px solid var(--ink);
+  padding:5px 9px 6px;white-space:nowrap;font-family:var(--font-scale);font-size:11px;line-height:1.25;
+  box-shadow:3px 3px 0 var(--ink-14)}
+.chip b{display:block;font-weight:500;font-size:12px;color:var(--accent)}
+.chip span{color:var(--ink-60)}
+
+/* ---------- header + logo ------------------------------------------------ */
+.header{position:fixed;top:0;left:var(--rail);right:0;z-index:30;display:flex;align-items:center;
+  gap:clamp(10px,2vw,28px);padding:14px var(--gutter);
+  background:linear-gradient(to bottom,var(--paper) 62%,transparent)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.035em;
+  font-variation-settings:"wdth" 92;text-decoration:none;color:inherit}
+.brand .hot{color:var(--accent);transition:color .45s ease}
+.brand svg{display:block;width:30px;height:30px;flex:none;overflow:visible}
+.lg-beam{transform-box:view-box;transform-origin:100px 104px;transition:transform .7s cubic-bezier(.22,1.4,.36,1)}
+.lg-pan{transform-box:view-box;transform-origin:100px 132px;transition:transform .7s cubic-bezier(.22,1.4,.36,1)}
+.lg-dot{transform-box:view-box;transform-origin:100px 42px;transition:transform .5s cubic-bezier(.22,1.6,.36,1)}
+.brand:hover .lg-beam,.brand:focus-visible .lg-beam,.brand.tip .lg-beam{transform:rotate(-9deg)}
+.brand:hover .lg-pan,.brand:focus-visible .lg-pan,.brand.tip .lg-pan{transform:rotate(9deg) translateY(5px)}
+.brand:hover .lg-dot,.brand:focus-visible .lg-dot,.brand.tip .lg-dot{transform:scale(1.5)}
+.lg-fill{fill:var(--accent);transition:fill .45s ease}
+.nav{display:flex;gap:clamp(10px,1.5vw,22px);margin-left:auto;align-items:center}
+.nav a.navlink{font-size:14px;color:var(--ink-60);text-decoration:none;padding:4px 0;border-bottom:1px solid transparent}
+.nav a.navlink:hover,.nav a.navlink[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.btn{font:inherit;font-size:14px;font-weight:600;padding:9px 16px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--paper);cursor:pointer;border-radius:2px;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.theme{width:36px;height:36px;padding:0;display:grid;place-items:center;border:1px solid var(--ink-32);
+  background:transparent;color:var(--ink);cursor:pointer;border-radius:2px}
+.theme:hover{border-color:var(--accent);color:var(--accent)}
+.theme svg{width:17px;height:17px;display:block}
+@media (max-width:900px){ .nav a.navlink{display:none} }
+
+/* ---------- page --------------------------------------------------------- */
+.main{position:relative;z-index:3;margin-left:var(--rail);padding:0 var(--gutter);
+  padding-right:calc(38vw + var(--gutter))}
+.main.wide{padding-right:var(--gutter)}
+.sec{padding:clamp(76px,10vh,132px) 0;border-top:1px solid var(--ink-14)}
+.sec:first-of-type{border-top:0}
+.marker{font-family:var(--font-scale);font-size:12px;color:var(--accent);display:flex;align-items:baseline;
+  gap:10px;margin-bottom:24px;transition:color .45s ease}
+.marker::after{content:"";flex:1;height:1px;background:var(--ink-14);transform:translateY(-4px)}
+h2{font-size:clamp(32px,4.9vw,60px);font-weight:800;letter-spacing:-.035em;line-height:.99;margin:0 0 18px;
+  font-variation-settings:"wdth" 94;text-wrap:balance;max-width:17ch}
+p{max-width:var(--measure);margin:0 0 14px;color:var(--ink-60)}
+.lede{font-size:21px;line-height:1.38;color:var(--ink);max-width:40ch}
+
+.hero{padding-top:clamp(118px,16vh,182px);min-height:min(700px,82vh);display:flex;flex-direction:column;justify-content:center}
+.hero h1{font-size:clamp(54px,11.8vw,142px);font-weight:800;letter-spacing:-.035em;line-height:.86;margin:0 0 22px}
+.hero h1 em{font-style:normal;color:var(--accent);transition:color .45s ease}
+.hero h1 .lo{font-weight:300;font-variation-settings:"wdth" 88}
+.stats{display:flex;flex-wrap:wrap;column-gap:clamp(18px,3vw,44px);row-gap:20px;margin-top:34px;
+  padding-top:20px;border-top:1px solid var(--ink)}
+.stat b{display:block;font-family:var(--font-scale);font-size:clamp(21px,2.5vw,29px);font-weight:500;letter-spacing:-.02em}
+.stat span{display:block;font-size:12px;color:var(--ink-60);margin-top:3px}
+
+/* ---------- bowl chooser -------------------------------------------------- */
+.bowls{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;max-width:700px;margin:4px 0 22px}
+.bowl{position:relative;text-align:left;font:inherit;cursor:pointer;padding:14px 14px 15px;background:var(--paper-2);
+  border:1px solid var(--ink-14);border-radius:3px;color:inherit;display:flex;flex-direction:column;gap:3px;
+  transition:border-color .25s,background-color .25s,transform .25s}
+.bowl:hover{transform:translateY(-2px);border-color:var(--ink-32)}
+.bowl .swatch{width:26px;height:26px;border-radius:50%;margin-bottom:8px;box-shadow:inset 0 -8px 12px rgba(0,0,0,.2)}
+.bowl .bn{font-weight:700;font-size:16px;letter-spacing:-.02em;line-height:1.15}
+.bowl .bt{font-family:var(--font-scale);font-size:10px;letter-spacing:.1em;color:var(--ink-32)}
+.bowl .bm{font-family:var(--font-scale);font-size:12px;color:var(--ink-60);margin-top:7px}
+.bowl[aria-pressed="true"]{background:var(--paper-3)}
+.bowl[aria-pressed="true"]::after{content:"";position:absolute;inset:-1px;border:2px solid var(--bc);border-radius:3px;pointer-events:none}
+.bowl[aria-pressed="true"] .bt{color:var(--bc)}
+
+/* ---------- tables, tiles, controls -------------------------------------- */
+.spec{width:100%;border-collapse:collapse;max-width:640px;margin:8px 0 20px}
+.spec caption{text-align:left;font-size:12px;color:var(--ink-32);font-family:var(--font-scale);padding-bottom:8px}
+.spec th,.spec td{text-align:left;padding:11px 12px 11px 0;border-bottom:1px solid var(--ink-14);vertical-align:baseline}
+.spec thead th{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-32);font-weight:500;padding-bottom:7px}
+.spec tbody th{font-weight:600;font-size:16px}
+.spec .note{font-size:13px;color:var(--ink-60);font-weight:400}
+.spec .g{font-family:var(--font-scale);font-variant-numeric:tabular-nums;text-align:right;padding-right:0;white-space:nowrap;width:1%}
+.spec tfoot td,.spec tfoot th{border-bottom:0;border-top:1px solid var(--ink);font-weight:700;padding-top:12px}
+.spec tfoot .g{color:var(--accent)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.macros{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--ink-14);
+  border:1px solid var(--ink-14);max-width:620px;margin:6px 0 22px}
+.tile{background:var(--paper-2);padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.tile b{font-family:var(--font-scale);font-size:32px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.tile .k{font-size:12px;color:var(--ink-60)}
+.tile.hot b{color:var(--accent)}
+.bar{height:4px;background:var(--ink-14);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--ink-60);display:block;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.tile.hot .bar i{background:var(--accent)}
+.tile.fat .bar i{background:#a97a3d}
+.batch{font-family:var(--font-scale);font-size:11px;color:var(--ink-60);border-top:1px solid var(--ink-14);
+  padding-top:10px;max-width:620px;letter-spacing:.02em}
+.switch{display:inline-flex;border:1px solid var(--ink);margin:4px 0 22px;border-radius:2px;overflow:hidden}
+.switch button{font:inherit;font-size:14px;font-weight:600;padding:10px 20px;background:transparent;color:var(--ink);border:0;cursor:pointer}
+.switch button+button{border-left:1px solid var(--ink)}
+.switch button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.switch button:hover:not([aria-pressed="true"]){background:var(--ink-07)}
+.portion-read{display:flex;flex-wrap:wrap;gap:26px;max-width:620px;margin-bottom:16px}
+.portion-read b{display:block;font-family:var(--font-scale);font-size:24px;font-weight:500;letter-spacing:-.02em}
+.portion-read span{font-size:12px;color:var(--ink-60)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:1px;background:var(--ink-14);
+  border:1px solid var(--ink-14);max-width:660px;margin:4px 0 20px}
+.plan{background:var(--paper-2);padding:18px 16px;display:flex;flex-direction:column;gap:4px}
+.plan .rate{font-family:var(--font-scale);font-size:28px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.plan .len{font-size:13px;color:var(--ink-60)}
+.plan .per{font-size:11px;color:var(--ink-32);font-family:var(--font-scale);margin-top:auto;padding-top:12px}
+.plan.pick{background:var(--paper-3);box-shadow:inset 0 0 0 2px var(--accent)}
+.plan.pick .rate,.plan.pick .flag{color:var(--accent)}
+.plan.pick .flag{font-family:var(--font-scale);font-size:10px;letter-spacing:.1em}
+.plan-pick{font:inherit;font-size:12px;font-weight:600;margin-top:14px;padding:9px 10px;
+  border:1px solid var(--ink-32);background:transparent;color:var(--ink);border-radius:2px;
+  cursor:pointer;transition:border-color .2s,background-color .2s,color .2s}
+.plan-pick:hover{border-color:var(--accent);color:var(--accent)}
+.plan.chosen{box-shadow:inset 0 0 0 2px var(--accent)}
+.plan.chosen .plan-pick{background:var(--accent);border-color:var(--accent);color:#fff}
+.plan.chosen .plan-pick:hover{background:var(--accent);color:#fff}
+.areas{display:flex;flex-wrap:wrap;gap:8px;max-width:620px;margin:6px 0 20px}
+.area{font-family:var(--font-scale);font-size:13px;padding:7px 12px;border:1px solid var(--ink-32);border-radius:2px}
+.area.live{border-color:var(--accent);color:var(--accent)}
+.area.next{border-style:dashed;color:var(--ink-32)}
+.area i{font-style:normal;opacity:.7;font-size:11px;margin-left:6px}
+
+/* ---------- delivery map -------------------------------------------------- */
+.map-wrap{max-width:420px;margin:10px 0 22px;border:1px solid var(--ink-14);background:var(--paper-2);
+  border-radius:3px;padding:14px 14px 12px}
+.map-wrap svg{width:100%;height:auto;display:block;overflow:visible}
+.map-ring{fill:none;stroke:var(--ink-14);stroke-width:1}
+.map-ring-edge{stroke:var(--accent);stroke-width:1.4;stroke-dasharray:3 4}
+.map-radial{stroke:var(--ink-14);stroke-width:1;stroke-dasharray:2 3}
+.map-radial-label{font-size:9px;fill:var(--ink-32);letter-spacing:.04em}
+.map-kitchen-halo{fill:var(--paper-3);stroke:var(--ink-32);stroke-width:1}
+.map-kitchen-body{fill:var(--steel)}
+.map-kitchen-rim{fill:var(--accent)}
+.map-kitchen-label{font-size:8px;fill:var(--ink-60);letter-spacing:.1em}
+.map-area-name{font-size:11px;font-weight:600;fill:var(--ink);text-anchor:middle}
+.map-area-dist{font-size:9px;fill:var(--ink-32);text-anchor:middle}
+.map-dot{fill:var(--ink-32)}
+.map-area-live .map-dot{fill:var(--accent)}
+.map-area-live .map-area-name{fill:var(--accent)}
+.map-dot-pulse{fill:none;stroke:var(--accent);stroke-width:1.4;opacity:.55;
+  transform-box:fill-box;transform-origin:center;animation:mapPulse 2.6s ease-out infinite}
+.map-area-next .map-dot{fill:var(--ink-32)}
+.map-area-next .map-area-name{fill:var(--ink-60)}
+@keyframes mapPulse{
+  0%{transform:scale(1);opacity:.55}
+  100%{transform:scale(2.6);opacity:0}
+}
+.map-key{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:10px;padding-top:10px;
+  border-top:1px solid var(--ink-14)}
+.map-key-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60)}
+.map-key-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--ink-32)}
+.map-key-dot.live{background:var(--accent)}
+.map-key-dot.next{background:var(--ink-32);opacity:.6}
+.map-key-note{font-size:10px;color:var(--ink-32);margin-left:auto}
+@media (prefers-reduced-motion:reduce){ .map-dot-pulse{animation:none;opacity:0} }
+.form{max-width:520px;display:grid;gap:12px;margin:6px 0 0}
+.form .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+label{display:block;font-size:12px;color:var(--ink-60);margin-bottom:5px}
+input,select{font:inherit;font-size:16px;width:100%;padding:11px 12px;border:1px solid var(--ink-32);
+  background:var(--paper-2);color:var(--ink);border-radius:2px}
+input:focus,select:focus{border-color:var(--accent)}
+.count{font-family:var(--font-scale);font-size:13px;color:var(--ink-60);margin-top:4px;min-height:1.2em}
+.count b{color:var(--accent);font-weight:500}
+.said{font-family:var(--font-scale);font-size:14px;color:var(--ink-60);margin-top:4px;min-height:1.2em}
+.said.bad{color:var(--accent)}
+
+/* ---------- day timeline -------------------------------------------------- */
+.timeline{list-style:none;margin:8px 0 0;padding:0;max-width:640px}
+.tl-step{display:grid;grid-template-columns:24px 1fr;gap:18px}
+.tl-rail{display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none;margin-top:6px}
+.tl-line{flex:1;width:1px;background:var(--ink-14);margin:4px 0}
+.tl-body{padding-bottom:30px}
+.tl-time{font-size:13px;color:var(--accent);margin-bottom:4px}
+.tl-label{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.tl-copy{font-size:14px;line-height:1.5;color:var(--ink-60);margin:0;max-width:46ch}
+
+/* ---------- social ------------------------------------------------------- */
+.socials{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 0}
+.social{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--ink-14);
+  background:var(--paper-2);border-radius:2px;text-decoration:none;color:var(--ink-60);
+  font-size:13px;transition:border-color .2s,color .2s,transform .2s}
+.social:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.social svg{width:16px;height:16px;flex:none}
+.social .h{font-family:var(--font-scale);font-size:12px;color:var(--ink-32)}
+.social:hover .h{color:var(--accent)}
+
+/* ---------- marquee, footer, loader -------------------------------------- */
+.mq{overflow:hidden;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:12px 0;
+  margin-left:var(--rail);position:relative;z-index:3;background:var(--paper)}
+.mq div{display:flex;gap:34px;width:max-content;animation:sl 28s linear infinite;font-family:var(--font-scale);
+  font-size:13px;letter-spacing:.14em;color:var(--ink-60);white-space:nowrap}
+.mq em{font-style:normal;color:var(--accent)}
+@keyframes sl{to{transform:translateX(-50%)}}
+.footer{margin-left:var(--rail);padding:36px var(--gutter) 46px;position:relative;z-index:3;background:var(--paper);
+  display:flex;flex-wrap:wrap;gap:26px 48px;align-items:flex-start;font-size:13px;color:var(--ink-60)}
+.footer .col{display:flex;flex-direction:column;gap:8px}
+.footer .sig{font-weight:700;color:var(--ink);font-size:16px;letter-spacing:-.02em}
+.loader{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;flex-direction:column;
+  justify-content:flex-end;padding:var(--gutter);gap:14px;transition:opacity .5s ease}
+.loader .lname{font-size:clamp(36px,7.6vw,84px);font-weight:800;letter-spacing:-.04em;line-height:.9}
+.loader .lname em{font-style:normal;color:var(--accent)}
+.loader .lrow{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-scale);
+  font-size:13px;color:var(--ink-60);border-top:1px solid var(--ink);padding-top:12px}
+.loader .lbar{height:2px;background:var(--ink-14);position:relative}
+.loader .lbar i{position:absolute;inset:0 auto 0 0;background:var(--accent);display:block}
+.loader.done{opacity:0;pointer-events:none}
+
+@media (max-width:900px){
+  .main{padding-right:var(--gutter)}
+  .stage{width:100%;height:50vh;min-width:0;top:0;bottom:auto}
+  .hero{padding-top:calc(50vh + 20px);min-height:0;background:var(--veil)}
+  .sec:not(.hero),.chapter{background:var(--veil)}
+  .sec,.chapter{padding-left:14px;padding-right:14px;margin-left:-14px;margin-right:-14px}
+  .form .row{grid-template-columns:1fr}
+  .annos{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .mq div{animation:none}
+  .lg-beam,.lg-pan,.lg-dot,.bowl,.social{transition:none}
+}
+
+#boot{position:fixed;inset:0;z-index:120;background:var(--paper);display:flex;
+  flex-direction:column;justify-content:flex-end;padding:var(--gutter);gap:14px;
+  transition:opacity .35s ease}
+#boot.off{opacity:0;pointer-events:none}
+#boot .bn{font-size:clamp(36px,7.6vw,84px);font-weight:800;letter-spacing:-.04em;line-height:.9}
+#boot .bn em{font-style:normal;color:var(--accent)}
+#boot .br{display:flex;justify-content:space-between;font-family:var(--font-scale);font-size:13px;
+  color:var(--ink-60);border-top:1px solid var(--ink);padding-top:12px}
+</style>
+
+<div id="boot">
+  <div class="bn">Eat<em>Makro</em></div>
+  <div class="br"><span>Warming the kitchen</span><span class="mono">0 g</span></div>
+</div>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+/* =============================================================================
+   EatMakro — built from src/ by scripts/build-artifact.mjs. Do not edit here:
+   edit the component under src/ and rebuild. The file boundaries below are the
+   real ones from the React project.
+   ========================================================================== */
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+/* ===== src/three/helpers.js ============================================== */
+
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const ramp = (p, a, b) => clamp01((p - a) / (b - a));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+/** Deterministic value noise, so food never looks machine-made. */
+function hash3(x, y, z) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+/** A box with its corners pushed out onto a sphere: the base shape for
+ *  anything cut with a knife rather than grown. */
+function roundedBox(w, h, d, r, seg = 4) {
+  r = Math.min(r, Math.min(w, h, d) / 2 - 0.001);
+  const g = new THREE.BoxGeometry(w, h, d, seg, seg, seg);
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const hx = w / 2 - r, hy = h / 2 - r, hz = d / 2 - r;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    c.set(
+      THREE.MathUtils.clamp(v.x, -hx, hx),
+      THREE.MathUtils.clamp(v.y, -hy, hy),
+      THREE.MathUtils.clamp(v.z, -hz, hz),
+    );
+    const dir = v.clone().sub(c);
+    if (dir.lengthSq() > 1e-8) { dir.setLength(r); v.copy(c).add(dir); }
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Organic vertex displacement. */
+function roughen(geo, amount, freq = 3) {
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const n = hash3(v.x * freq, v.y * freq, v.z * freq) - 0.5;
+    const l = v.length() || 1;
+    v.multiplyScalar(1 + (n * amount) / l);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function mat(color, roughness = 0.62, extra) {
+  return new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, ...extra });
+}
+
+/* ===== src/three/palette.js ============================================== */
+/**
+ * Food colours, held one stop back from the fruit-bowl versions.
+ * Saturated food photography reads as plastic on screen; real chicken tikka
+ * is brick, not orange, and a boiled yolk is ochre, not neon. Every value
+ * here was pulled down in saturation and value so the scene can be looked at
+ * for a whole scroll without tiring the eye. Steel stays the only neutral.
+ */
+const FOOD = {
+  rice:        0xeee9dc,
+  jeeraRice:   0xe8dcc4,
+  cumin:       0x6b5334,
+  millet:      0xcdbb93,
+
+  tikka:       0xb85a34,
+  tikkaChar:   0x50331f,
+  paneer:      0xf0ead6,
+  paneerSear:  0xb08447,
+  chickpea:    0xcfab72,
+  eggWhite:    0xf6f2e6,
+  eggYolk:     0xdda94e,
+
+  broccoli:    0x5d7f47,
+  broccoliDeep:0x415c33,
+  stem:        0x91a377,
+  carrot:      0xc4763a,
+  beetBody:    0x76354f,
+  beetFace:    0x9c5271,
+  capGreen:    0x628350,
+  capRed:      0xa9564a,
+  capYellow:   0xc9a457,
+  onion:       0xb9a6c2,
+  tomato:      0xac5442,
+  spinach:     0x4d7048,
+  lemon:       0xd4be62,
+  coriander:   0x7d9660,
+
+  curd:        0xf4f1e6,
+  makhani:     0xbd6a3d,
+
+  steel:       0xc4ccd4,
+  steelDark:   0x6f7a85,
+  brass:       0xb09a63,
+  flame:       0xd8843c,
+};
+
+/* ===== src/three/env.js ================================================== */
+
+/**
+ * Metal renders black without reflections, so the scene paints its own
+ * equirectangular studio and runs it through PMREM. Softer than a photographic
+ * HDRI on purpose: two broad strips rather than hard point sources, so the
+ * steel has long calm highlights instead of glare.
+ */
+function studioEnv(renderer) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0.00, '#dfe6ec');
+  g.addColorStop(0.30, '#a8b3bd');
+  g.addColorStop(0.50, '#6c7883');
+  g.addColorStop(0.68, '#3b434b');
+  g.addColorStop(1.00, '#141a1f');      // a dark floor is what makes steel read
+  x.fillStyle = g; x.fillRect(0, 0, 512, 256);
+  x.fillStyle = '#f2f6f9';
+  x.fillRect(38, 16, 152, 38);
+  x.fillRect(298, 28, 104, 26);         // two soft strip lights
+  x.fillStyle = 'rgba(26,31,36,0.7)';
+  x.fillRect(216, 10, 50, 58);          // a gap for the highlight to break on
+  x.fillStyle = 'rgba(214,180,142,0.34)';
+  x.fillRect(190, 122, 130, 38);        // warm bounce, so food is not grey
+
+  const tex = new THREE.CanvasTexture(c);
+  // Without this the canvas values are read as linear, so the whole image
+  // lights the scene about 1.8x too hard and every albedo washes to white.
+  tex.encoding = THREE.sRGBEncoding;
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  const pm = new THREE.PMREMGenerator(renderer);
+  pm.compileEquirectangularShader();
+  const env = pm.fromEquirectangular(tex).texture;
+  pm.dispose(); tex.dispose();
+  return env;
+}
+
+/** Cheaper and softer than a real shadow map. */
+function contactShadow(radius = 2.2, opacity = 1) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(128, 128, 8, 128, 128, 126);
+  g.addColorStop(0, 'rgba(12,17,22,0.55)');
+  g.addColorStop(0.45, 'rgba(12,17,22,0.22)');
+  g.addColorStop(1, 'rgba(12,17,22,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(radius * 2, radius * 2),
+    new THREE.MeshBasicMaterial({
+      map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, opacity,
+    }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
+
+/** Four lights, a kitchen-studio rig held slightly below full so the muted
+ *  food palette is not blown back up by exposure. */
+function kitchenRig(scene) {
+  // Held deliberately low. The environment already supplies most of the
+  // diffuse; adding a full-strength key on top is what greys food out.
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x66717c, 0.38);
+  const key = new THREE.DirectionalLight(0xfff1dd, 1.45);
+  key.position.set(3.2, 5.4, 2.6);
+  const fill = new THREE.DirectionalLight(0xd8e6ff, 0.42);
+  fill.position.set(-4, 1.6, 2.2);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.72);
+  rim.position.set(-1.4, 2.2, -4.2);
+  scene.add(hemi, key, fill, rim);
+  return { hemi, key, fill, rim };
+}
+
+/* ===== src/three/steel.js ================================================ */
+
+
+function steelMat(dark) {
+  return new THREE.MeshStandardMaterial({
+    color: dark ? FOOD.steelDark : FOOD.steel, metalness: 0.95, roughness: 0.24,
+  });
+}
+
+/** Lathe profile: flat base, curved wall, rolled rim, thin inner wall. The
+ *  turned base ring is the detail that makes a dabba read as a dabba. */
+function steelBowl() {
+  const V = THREE.Vector2;
+  const p = [
+    new V(0.00, 0.00), new V(0.72, 0.00), new V(0.90, 0.05), new V(1.02, 0.18),
+    new V(1.10, 0.38), new V(1.15, 0.58), new V(1.19, 0.66), new V(1.15, 0.70),
+    new V(1.10, 0.66), new V(1.05, 0.55), new V(0.96, 0.32), new V(0.84, 0.14),
+    new V(0.66, 0.06), new V(0.00, 0.06),
+  ];
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.028, 10, 60), steelMat(true));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.02;
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(p, 72), steelMat()), ring);
+  return g;
+}
+
+function steelLid() {
+  const V = THREE.Vector2;
+  const p = [
+    new V(0.00, 0.16), new V(0.52, 0.155), new V(0.90, 0.13), new V(1.10, 0.08),
+    new V(1.20, 0.00), new V(1.16, -0.06), new V(1.06, -0.02), new V(0.86, 0.075),
+    new V(0.50, 0.10), new V(0.00, 0.105),
+  ];
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.085, 20, 14), steelMat(true));
+  knob.scale.y = 0.72;
+  knob.position.y = 0.19;
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(p, 72), steelMat()), knob);
+  return g;
+}
+
+/* ===== src/three/food.js ================================================= */
+
+
+
+/* ------------------------------------------------------------------ grains */
+
+function grainMound({ count, color, r = 0.038, sx = 1.9, sy = 0.85, sz = 0.85 }) {
+  const geo = new THREE.SphereGeometry(r, 7, 5);
+  geo.scale(sx, sy, sz);
+  const m = new THREE.InstancedMesh(geo, mat(color, 0.74), count);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < count; i++) {
+    const a = hash3(i, 1.3, 7.7) * Math.PI * 2;
+    const rr = Math.sqrt(hash3(i, 4.1, 2.2)) * 0.8;
+    d.position.set(
+      Math.cos(a) * rr,
+      0.22 * (1 - rr / 0.8) * (0.5 + hash3(i, 9.9, 0.4)),
+      Math.sin(a) * rr,
+    );
+    d.rotation.set(hash3(i, 2, 5) * Math.PI, hash3(i, 5, 2) * Math.PI, hash3(i, 8, 3) * Math.PI);
+    d.scale.setScalar(0.82 + hash3(i, 3, 3) * 0.4);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+const basmati = () => grainMound({ count: 460, color: FOOD.rice });
+const millet = () =>
+  grainMound({ count: 520, color: FOOD.millet, r: 0.033, sx: 1.15, sy: 1, sz: 1 });
+
+function jeeraRice() {
+  const g = new THREE.Group();
+  g.add(grainMound({ count: 420, color: FOOD.jeeraRice }));
+  g.add(grainMound({ count: 46, color: FOOD.cumin, r: 0.026, sx: 1.7, sy: 0.9, sz: 0.9 }));
+  return g;
+}
+
+/* ---------------------------------------------------------------- proteins */
+
+let charMat = null;
+function tikkaChunk(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.31, 0.27, 0.31, 0.09, 5), 0.05, 5 + seed), mat(FOOD.tikka, 0.6)));
+  charMat = charMat || mat(FOOD.tikkaChar, 0.74);
+  for (let i = 0; i < 3; i++) {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.055 + hash3(i, seed, 2) * 0.03, 7, 5), charMat);
+    const a = hash3(i, seed, 4) * 6.283;
+    s.position.set(Math.cos(a) * 0.1, 0.12 + hash3(i, 1, seed) * 0.02, Math.sin(a) * 0.1);
+    s.scale.y = 0.45;
+    g.add(s);
+  }
+  return g;
+}
+
+let searMat = null;
+function paneerCube(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roundedBox(0.3, 0.25, 0.3, 0.045, 4), mat(FOOD.paneer, 0.7)));
+  searMat = searMat || mat(FOOD.paneerSear, 0.58);
+  for (let i = 0; i < 2; i++) {
+    const bar = new THREE.Mesh(roundedBox(0.28, 0.02, 0.045, 0.01, 2), searMat);
+    bar.position.set(0, 0.126, -0.06 + i * 0.12);
+    g.add(bar);
+  }
+  return g;
+}
+
+function chickpeas(n) {
+  const geo = roughen(new THREE.SphereGeometry(0.082, 9, 7), 0.05, 9);
+  geo.scale(1, 0.9, 1);
+  const m = new THREE.InstancedMesh(geo, mat(FOOD.chickpea, 0.58), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 2.7, 1.1) * 6.283;
+    const rr = Math.sqrt(hash3(i, 5.5, 3.3)) * 0.62;
+    d.position.set(Math.cos(a) * rr, 0.1 + hash3(i, 7, 2) * 0.13, Math.sin(a) * rr);
+    d.rotation.set(hash3(i, 1, 9) * 3.14, hash3(i, 4, 6) * 3.14, hash3(i, 6, 4) * 3.14);
+    d.scale.setScalar(0.85 + hash3(i, 8, 8) * 0.35);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+function eggHalf(seed = 0) {
+  const g = new THREE.Group();
+  const white = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 12), mat(FOOD.eggWhite, 0.48));
+  white.scale.set(1, 0.74, 1);
+  const yolk = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 10), mat(FOOD.eggYolk, 0.56));
+  yolk.scale.set(1, 0.42, 1);
+  yolk.position.y = 0.145;
+  g.add(white, yolk);
+  g.rotation.y = seed;
+  return g;
+}
+
+/* -------------------------------------------------------------- vegetables */
+
+function broccoli(seed = 0) {
+  const g = new THREE.Group();
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.085, 0.3, 10), mat(FOOD.stem, 0.8));
+  stem.position.y = 0.15;
+  g.add(stem);
+  const head = mat(FOOD.broccoli, 0.9, { flatShading: true });
+  const deep = mat(FOOD.broccoliDeep, 0.94, { flatShading: true });
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * 6.283 + seed;
+    const r = i === 0 ? 0 : 0.115;
+    const blob = new THREE.Mesh(
+      roughen(new THREE.IcosahedronGeometry(0.115 + hash3(i, seed, 1) * 0.05, 1), 0.05, 6),
+      i % 3 === 0 ? deep : head,
+    );
+    blob.position.set(Math.cos(a) * r, 0.31 + hash3(i, 2, seed) * 0.07, Math.sin(a) * r);
+    g.add(blob);
+  }
+  return g;
+}
+
+const carrot = () =>
+  new THREE.Mesh(roughen(new THREE.CylinderGeometry(0.055, 0.075, 0.46, 8), 0.018, 8), mat(FOOD.carrot, 0.64));
+
+function beetSlice() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.055, 22), mat(FOOD.beetBody, 0.46)));
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.058, 22), mat(FOOD.beetFace, 0.42)));
+  return g;
+}
+
+/** Capsicum, onion and tomato are all cuts of the same sphere. */
+function shell(color, r, thin, rough = 0.36) {
+  const geo = new THREE.SphereGeometry(r, 14, 9, 0, Math.PI * 0.62, 0, Math.PI * 0.52);
+  const m = new THREE.Mesh(geo, mat(color, rough, { side: THREE.DoubleSide }));
+  m.scale.y = thin;
+  return m;
+}
+const capsicum = (c) => shell(c, 0.21, 0.5, 0.32);
+const onionPetal = () => shell(FOOD.onion, 0.19, 0.42, 0.42);
+const tomatoWedge = () => shell(FOOD.tomato, 0.19, 0.62, 0.3);
+const CAPSICUM_COLOURS = [FOOD.capGreen, FOOD.capRed, FOOD.capYellow, FOOD.capGreen, FOOD.capRed];
+
+function spinachLeaf(seed = 0) {
+  const geo = roughen(new THREE.SphereGeometry(0.2, 12, 8), 0.09, 7);
+  geo.scale(1.35, 0.1, 0.9);
+  const m = new THREE.Mesh(geo, mat(FOOD.spinach, 0.84, { side: THREE.DoubleSide }));
+  m.rotation.y = seed;
+  return m;
+}
+
+function lemonWedge() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.155, 0.075, 14, 1, false, 0, Math.PI * 0.55), mat(FOOD.lemon, 0.48)));
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.062, 14, 1, true, 0, Math.PI * 0.55), mat(0xb9a44a, 0.62, { side: THREE.DoubleSide })));
+  return g;
+}
+
+function curdDollop(color = FOOD.curd) {
+  const m = new THREE.Mesh(roughen(new THREE.SphereGeometry(0.26, 18, 12), 0.05, 4), mat(color, 0.44));
+  m.scale.y = 0.5;
+  return m;
+}
+const makhaniDollop = () => curdDollop(FOOD.makhani);
+
+/* ----------------------------------------------- garnish, steam, particles */
+
+let flakeGeo = null;
+function flake() {
+  flakeGeo = flakeGeo || roundedBox(0.055, 0.012, 0.038, 0.005, 2);
+  return flakeGeo;
+}
+
+function corianderScatter(n, radius, y) {
+  const m = new THREE.InstancedMesh(flake(), mat(FOOD.coriander, 0.72), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 3.3, 8.8) * 6.283;
+    const rr = Math.sqrt(hash3(i, 6.6, 1.1)) * radius;
+    d.position.set(Math.cos(a) * rr, y + hash3(i, 2, 2) * 0.05, Math.sin(a) * rr);
+    d.rotation.set(hash3(i, 9, 1) * 1.2, hash3(i, 1, 7) * 6.283, hash3(i, 5, 5) * 1.2);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+/** A wavy tube that drifts and fades: steam above food that is still hot. */
+function steamRibbon(seed = 0) {
+  const pts = [];
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    pts.push(new THREE.Vector3(
+      Math.sin(t * 4 + seed) * 0.18 * t,
+      t * 1.5,
+      Math.cos(t * 3.4 + seed * 1.7) * 0.16 * t,
+    ));
+  }
+  return new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 22, 0.028, 5, false),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false }),
+  );
+}
+
+/* ===== src/three/label.js ================================================ */
+
+/**
+ * The printed macro sticker, drawn to a canvas and used as a texture.
+ * Regenerated whenever the bowl or the portion changes — the label is the
+ * product, so it can never be a generic decal.
+ */
+function labelTexture(bowl, size) {
+  const d = bowl[size];
+  const c = document.createElement('canvas');
+  c.width = 640; c.height = 400;
+  const x = c.getContext('2d');
+
+  x.fillStyle = '#f4f4f0'; x.fillRect(0, 0, 640, 400);
+  x.fillStyle = bowl.accent.light; x.fillRect(0, 0, 640, 96);
+  x.fillStyle = '#f4f4f0';
+  x.font = '700 42px Helvetica, Arial, sans-serif';
+  x.fillText(bowl.name.toUpperCase(), 28, 50);
+  x.font = '500 20px Helvetica, Arial, sans-serif';
+  x.fillText('EATMAKRO · HYDERABAD', 28, 80);
+  x.textAlign = 'right';
+  x.fillText(`${size.toUpperCase()} · ${bowl.tag}`, 612, 80);
+  x.textAlign = 'left';
+
+  x.fillStyle = '#111a20';
+  x.font = '700 118px Helvetica, Arial, sans-serif';
+  x.fillText(String(d.p), 28, 224);
+  const w = x.measureText(String(d.p)).width;
+  x.font = '500 29px Helvetica, Arial, sans-serif';
+  x.fillText('g protein', 28 + w + 14, 224);
+
+  const rows = [
+    ['Carbs', d.c, 120, ' g', '#4a6f52'],
+    ['Fat', d.f, 40, ' g', '#a97a3d'],
+    ['Energy', d.k, 900, ' kcal', '#111a20'],
+  ];
+  x.font = '500 22px Helvetica, Arial, sans-serif';
+  rows.forEach((row, i) => {
+    const y = 272 + i * 36;
+    x.fillStyle = '#111a20';
+    x.fillText(row[0], 28, y);
+    x.fillText(row[1] + row[3], 466, y);
+    x.fillStyle = 'rgba(17,26,32,0.12)';
+    x.fillRect(136, y - 17, 300, 18);
+    x.fillStyle = row[4];
+    x.fillRect(136, y - 17, Math.min(300, (row[1] / row[2]) * 300), 18);
+  });
+
+  x.fillStyle = '#111a20'; x.fillRect(0, 372, 640, 28);
+  x.fillStyle = '#f4f4f0';
+  x.font = '500 16px Helvetica, Arial, sans-serif';
+  x.fillText(`WEIGHED HYD·0417   ·   NET ${d.net} g   ·   EAT WITHIN 6 h`, 28, 392);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.encoding = THREE.sRGBEncoding;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/* ===== src/three/bowlBuilders.js ========================================= */
+
+
+
+/**
+ * One builder per rotation. Each fills four named layers — grain, prot, veg,
+ * top — which the scene explodes, restacks and swaps independently.
+ */
+const BUILDERS = {
+  tikka(L) {
+    L.grain.add(basmati());
+    for (let i = 0; i < 7; i++) {
+      const s = tikkaChunk(i);
+      const a = (i / 7) * 6.283 + 0.4;
+      s.position.set(Math.cos(a) * 0.36, 0.5 + i * 0.012, Math.sin(a) * 0.36);
+      s.rotation.y = -a + 0.3;
+      L.prot.add(s);
+    }
+    for (let b = 0; b < 3; b++) {
+      const br = broccoli(b * 1.7);
+      const ba = -0.9 + b * 0.7;
+      br.position.set(Math.cos(ba) * 0.62, 0.34, Math.sin(ba) * 0.62);
+      br.scale.setScalar(0.9);
+      L.veg.add(br);
+    }
+    for (let c = 0; c < 3; c++) {
+      const car = carrot();
+      car.position.set(-0.34 + c * 0.16, 0.4 + c * 0.05, -0.52);
+      car.rotation.set(Math.PI / 2, 0.2 * c, 0.35 + c * 0.1);
+      L.veg.add(car);
+    }
+    for (let t = 0; t < 3; t++) {
+      const bs = beetSlice();
+      bs.position.set(0.52 - t * 0.3, 0.4 + t * 0.05, 0.46 - t * 0.08);
+      bs.rotation.set(1.25 + t * 0.18, 0.4 * t, 0.22);
+      L.veg.add(bs);
+    }
+    const cd = curdDollop();
+    cd.position.set(-0.62, 0.42, 0.18);
+    L.top.add(cd, corianderScatter(30, 0.72, 0.5));
+  },
+
+  paneer(L) {
+    L.grain.add(jeeraRice());
+    for (let i = 0; i < 7; i++) {
+      const s = paneerCube(i);
+      const a = (i / 7) * 6.283 + 0.9;
+      s.position.set(Math.cos(a) * 0.36, 0.5 + i * 0.012, Math.sin(a) * 0.36);
+      s.rotation.y = -a + 0.3;
+      s.rotation.z = (hash3(i, 3, 1) - 0.5) * 0.2;
+      L.prot.add(s);
+    }
+    for (let c = 0; c < 5; c++) {
+      const cap = capsicum(CAPSICUM_COLOURS[c]);
+      const ca = (c / 5) * 6.283;
+      cap.position.set(Math.cos(ca) * 0.58, 0.38 + c * 0.03, Math.sin(ca) * 0.58);
+      cap.rotation.set(hash3(c, 1, 2) * 1.4, ca, hash3(c, 4, 1) * 0.8);
+      L.veg.add(cap);
+    }
+    for (let o = 0; o < 3; o++) {
+      const on = onionPetal();
+      on.position.set(-0.3 + o * 0.3, 0.42 + o * 0.04, -0.42 + o * 0.1);
+      on.rotation.set(1.1 + o * 0.3, o * 1.2, 0.3);
+      L.veg.add(on);
+    }
+    const mk = makhaniDollop();
+    mk.position.set(-0.6, 0.42, 0.2);
+    mk.scale.setScalar(1.05);
+    const cd = curdDollop();
+    cd.position.set(0.46, 0.42, -0.44);
+    cd.scale.setScalar(0.8);
+    L.top.add(mk, cd, corianderScatter(34, 0.74, 0.52));
+  },
+
+  chana(L) {
+    L.grain.add(millet());
+    L.prot.add(chickpeas(46));
+    for (let t = 0; t < 4; t++) {
+      const bs = beetSlice();
+      bs.position.set(0.56 - t * 0.32, 0.38 + t * 0.045, 0.44 - t * 0.22);
+      bs.rotation.set(1.25 + t * 0.16, 0.4 * t, 0.22);
+      L.veg.add(bs);
+    }
+    for (let s = 0; s < 4; s++) {
+      const lf = spinachLeaf(s * 1.4);
+      lf.position.set(Math.cos(s * 1.7) * 0.56, 0.36 + s * 0.03, Math.sin(s * 1.7) * 0.56);
+      lf.rotation.z = (hash3(s, 2, 2) - 0.5) * 0.5;
+      L.veg.add(lf);
+    }
+    for (let w = 0; w < 3; w++) {
+      const tw = tomatoWedge();
+      tw.position.set(-0.34 + w * 0.34, 0.44 + w * 0.03, -0.48);
+      tw.rotation.set(1.2 + w * 0.25, w * 1.1, 0.25);
+      L.top.add(tw);
+    }
+    L.top.add(corianderScatter(40, 0.76, 0.5));
+  },
+
+  egg(L) {
+    L.grain.add(millet());
+    for (let i = 0; i < 3; i++) {
+      const e = eggHalf(i * 1.9);
+      const a = (i / 3) * 6.283 + 0.5;
+      e.position.set(Math.cos(a) * 0.36, 0.48, Math.sin(a) * 0.36);
+      L.prot.add(e);
+    }
+    for (let s = 0; s < 5; s++) {
+      const lf = spinachLeaf(s * 1.25);
+      lf.position.set(Math.cos(s * 1.5) * 0.58, 0.36 + s * 0.025, Math.sin(s * 1.5) * 0.58);
+      lf.rotation.z = (hash3(s, 3, 1) - 0.5) * 0.5;
+      L.veg.add(lf);
+    }
+    for (let w = 0; w < 3; w++) {
+      const tw = tomatoWedge();
+      tw.position.set(-0.36 + w * 0.36, 0.44 + w * 0.03, -0.46);
+      tw.rotation.set(1.2 + w * 0.25, w * 1.1, 0.25);
+      L.veg.add(tw);
+    }
+    const cd = curdDollop();
+    cd.position.set(-0.58, 0.42, 0.24);
+    const lw = lemonWedge();
+    lw.position.set(0.58, 0.42, 0.3);
+    lw.rotation.set(1.5, 0.8, 0.4);
+    L.top.add(cd, lw, corianderScatter(28, 0.7, 0.5));
+  },
+};
+
+/** Builds one rotation's contents into a group of four named layers. */
+function buildContents(id) {
+  const g = new THREE.Group();
+  const L = {};
+  ['grain', 'prot', 'veg', 'top'].forEach((n) => {
+    L[n] = new THREE.Group();
+    g.add(L[n]);
+  });
+  BUILDERS[id](L);
+  g.userData.L = L;
+  return g;
+}
+
+/* ===== src/data/site.js ================================================== */
+/**
+ * Site-wide content. Prices, zones and plan lengths come from the 06 Sep
+ * meeting (₹200–250 band, discounts on 10/20/30-day plans).
+ */
+
+/* TODO before launch: these handles are the conventional ones for the name,
+   but nobody has claimed them yet. Confirm each account exists and belongs to
+   EatMakro before this ships — an unclaimed handle may be someone else's. */
+const SOCIALS = [
+  { id: 'instagram', label: 'Instagram', handle: '@eatmakro', url: 'https://instagram.com/eatmakro' },
+  { id: 'whatsapp', label: 'WhatsApp', handle: 'Order line', url: 'https://wa.me/' },
+  { id: 'linkedin', label: 'LinkedIn', handle: 'EatMakro', url: 'https://linkedin.com/company/eatmakro' },
+  { id: 'youtube', label: 'YouTube', handle: 'Kitchen camera', url: 'https://youtube.com/@eatmakro' },
+  { id: 'email', label: 'Email', handle: 'hello@eatmakro.in', url: 'mailto:hello@eatmakro.in' },
+];
+
+const PLANS = [
+  { id: 'trial', rate: 280, length: 'Trial · 3 days', total: '₹840', pick: false },
+  { id: '10day', rate: 250, length: '10-day plan', total: '₹2,500', pick: false },
+  { id: '20day', rate: 230, length: '20-day plan', total: '₹4,600', pick: true },
+  { id: '30day', rate: 210, length: '30-day plan', total: '₹6,300', pick: false },
+];
+
+/**
+ * Kitchen at the origin; each area's position is kilometres east (x) and
+ * north (y) of it — real relative directions (Gachibowli west, Madhapur
+ * northeast, Kondapur north, Financial District southwest), distances
+ * chosen so the three live zones sit inside the 4 km radius and the two
+ * "next" zones sit just outside it. Illustrative, not turn-by-turn GPS.
+ */
+const KITCHEN = { x: 0, y: 0 };
+const DELIVERY_RADIUS_KM = 4;
+const AREAS = [
+  { name: 'Gachibowli', state: 'live', x: -0.8, y: -0.3 },
+  { name: 'Hitech City', state: 'live', x: 1.6, y: 0.4 },
+  { name: 'Madhapur', state: 'live', x: 3.0, y: 1.3 },
+  { name: 'Kondapur', state: 'next', x: 0.9, y: 3.95 },
+  { name: 'Financial District', state: 'next', x: -3.3, y: -3.4 },
+];
+
+const NAV = [
+  { href: '#choose', label: 'bowls' },
+  { href: '#box', label: 'the box' },
+  { href: '#portions', label: 'portions' },
+  { href: '#plans', label: 'plans' },
+];
+
+/**
+ * The kitchen's own morning, ending exactly at the hero's desk-drop window.
+ * The plating time (45–60 s a box, two stations) and the cut/bulk rider
+ * split are both from the 06 Sep meeting log; the rest are the kitchen's
+ * own round clock times, not independently verified.
+ */
+const DAY_TIMELINE = [
+  { time: '5:30', label: 'Marinade checked', body: 'Chicken has sat in curd overnight. The kitchen opens by tasting it, not by turning on a stove.' },
+  { time: '9:00', label: 'First batch on the pan', body: 'Pan-fried, not air-fried — it holds up better across a whole morning’s batches.' },
+  { time: '11:00', label: 'Weigh & plate', body: 'The bottleneck, on purpose: 45–60 seconds a box, two stations, nothing scooped by eye.' },
+  { time: '11:40', label: 'Seal & label print', body: 'The lid goes on, then the sticker — printed after the box is weighed, never before.' },
+  { time: '12:00', label: 'Riders split cut / bulk', body: 'One rider carries one portion size, so a mixed order never gets sorted on a doorstep.' },
+  { time: '12:30–1:15', label: 'Desk drop', body: 'Only inside the zones a rider can reach while the box is still at its best.' },
+];
+
+const MARQUEE = [
+  'WEIGHED, NOT GUESSED', '4 BOWLS', 'KITCHEN ON CAMERA', 'PRINTED MACROS',
+  'RETURNABLE STEEL', '5 ml OIL', '70 BOXES A DAY', 'DIRECT ONLY',
+];
+
+/* ===== src/data/bowls.js ================================================= */
+/**
+ * The four rotations. Each carries its own accent, pulled out of its own
+ * food, so choosing a bowl re-themes the whole site. Accents are held one
+ * stop back from the raw ingredient colour so they stay readable as type.
+ *
+ * Weights are cooked weights and sum to `net`. Macros come from the team's
+ * 06 Sep target of 45–52 g protein and about 520 kcal for the chicken bowl;
+ * the other three are computed from their own components and are honestly
+ * lower where the ingredients are lower.
+ */
+const BOWLS = [
+  {
+    id: 'tikka',
+    name: 'Chicken Tikka',
+    tag: 'NON-VEG',
+    accent: { light: '#a8452a', dark: '#e08b6b' },
+    swatch: '#b85a34',
+    grainLabel: 'basmati rice',
+    proteinLabel: 'chicken tikka',
+    cut:  { net: 620, grain: 130, prot: 120, p: 48, c: 55, f: 12, k: 520 },
+    bulk: { net: 810, grain: 250, prot: 190, p: 72, c: 94, f: 18, k: 825 },
+    items: [
+      ['Chicken tikka, charred', 120, '#b85a34', 'Marinated in curd overnight, cooked dry.'],
+      ['Basmati rice', 130, '#eee9dc', 'Cooked weight, drained.'],
+      ['Broccoli', 110, '#5d7f47', 'Steamed 4 minutes so it still bites back.'],
+      ['Beetroot + carrot', 100, '#9c5271', 'Cut the same morning.'],
+      ['Curd, low fat', 150, '#f4f1e6', 'Set overnight in the kitchen, not bought in a tub.'],
+      ['Oil + masala', 10, '#8a6740', 'About 5 ml of oil. Masala is measured too — it counts.'],
+    ],
+    anchors: {
+      prot: [0.36, 0.56, 0.22], grain: [0, 0.36, 0], veg: [0.38, 0.46, 0.58],
+      veg2: [-0.28, 0.44, -0.5], top: [-0.62, 0.48, 0.18], masala: [1.02, 0.34, 0.26],
+    },
+  },
+  {
+    id: 'paneer',
+    name: 'Paneer Makhani',
+    tag: 'VEG',
+    accent: { light: '#85591a', dark: '#d9a962' },
+    swatch: '#bd6a3d',
+    grainLabel: 'jeera rice',
+    proteinLabel: 'paneer, grilled',
+    cut:  { net: 610, grain: 130, prot: 140, p: 38, c: 54, f: 20, k: 550 },
+    bulk: { net: 800, grain: 250, prot: 210, p: 56, c: 92, f: 30, k: 862 },
+    items: [
+      ['Paneer, grilled', 140, '#f0ead6', 'Pressed, cubed and charred on a flat top.'],
+      ['Jeera rice', 130, '#e8dcc4', 'Cooked weight. Cumin is weighed with it.'],
+      ['Capsicum + onion', 110, '#628350', 'Three colours of capsicum, not one.'],
+      ['Tomato makhani', 90, '#bd6a3d', 'Tomato and cashew, no cream.'],
+      ['Curd, low fat', 130, '#f4f1e6', 'Set overnight in the kitchen.'],
+      ['Oil + masala', 10, '#8a6740', 'About 5 ml of oil. Masala is measured too — it counts.'],
+    ],
+    anchors: {
+      prot: [0.36, 0.56, 0.22], grain: [0, 0.36, 0], veg: [0.42, 0.46, 0.4],
+      veg2: [-0.26, 0.46, -0.42], top: [-0.6, 0.48, 0.2], masala: [1.02, 0.34, 0.26],
+    },
+  },
+  {
+    id: 'chana',
+    name: 'Chana + Beet',
+    tag: 'VEGAN',
+    accent: { light: '#8f3457', dark: '#d1809b' },
+    swatch: '#9c5271',
+    grainLabel: 'bajra millet',
+    proteinLabel: 'kabuli chana',
+    cut:  { net: 650, grain: 140, prot: 200, p: 30, c: 76, f: 13, k: 540 },
+    bulk: { net: 850, grain: 260, prot: 280, p: 44, c: 118, f: 19, k: 820 },
+    items: [
+      ['Kabuli chana', 200, '#cfab72', 'Soaked 8 hours, boiled. Never from a tin.'],
+      ['Bajra millet', 140, '#cdbb93', 'Cooked weight. Lower GI than rice.'],
+      ['Beetroot', 100, '#9c5271', 'Roasted, not boiled. This is where the colour comes from.'],
+      ['Spinach', 90, '#4d7048', 'Wilted in the pan for 40 seconds.'],
+      ['Tomato + onion', 110, '#ac5442', 'The base masala, weighed after it reduces.'],
+      ['Oil + masala', 10, '#8a6740', 'About 5 ml of oil. Masala is measured too — it counts.'],
+    ],
+    anchors: {
+      prot: [0.3, 0.5, 0.24], grain: [0, 0.36, 0], veg: [0.4, 0.44, 0.36],
+      veg2: [-0.34, 0.42, -0.46], top: [-0.3, 0.5, -0.46], masala: [1.02, 0.34, 0.26],
+    },
+  },
+  {
+    id: 'egg',
+    name: 'Egg + Millet',
+    tag: 'EGG',
+    accent: { light: '#3f6b52', dark: '#7fb495' },
+    swatch: '#dda94e',
+    grainLabel: 'bajra millet',
+    proteinLabel: 'boiled egg',
+    cut:  { net: 580, grain: 130, prot: 150, p: 36, c: 46, f: 18, k: 490 },
+    bulk: { net: 770, grain: 240, prot: 225, p: 54, c: 80, f: 27, k: 779 },
+    items: [
+      ['Boiled egg, 3 halves', 150, '#dda94e', 'Seven minutes, so the yolk is still soft.'],
+      ['Bajra millet', 130, '#cdbb93', 'Cooked weight. Lower GI than rice.'],
+      ['Spinach', 100, '#4d7048', 'Wilted in the pan for 40 seconds.'],
+      ['Tomato + onion', 90, '#ac5442', 'The base masala, weighed after it reduces.'],
+      ['Curd, low fat', 100, '#f4f1e6', 'Set overnight in the kitchen.'],
+      ['Oil + masala', 10, '#8a6740', 'About 5 ml of oil. Masala is measured too — it counts.'],
+    ],
+    anchors: {
+      prot: [0.36, 0.54, 0.22], grain: [0, 0.36, 0], veg: [0.4, 0.44, 0.42],
+      veg2: [-0.34, 0.46, -0.44], top: [-0.58, 0.48, 0.24], masala: [1.02, 0.34, 0.26],
+    },
+  },
+];
+
+const BOWL_BY_ID = BOWLS.reduce((acc, b) => { acc[b.id] = b; return acc; }, {});
+
+/* ===== src/hooks/useReducedMotion.js ===================================== */
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const on = () => setReduced(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return reduced;
+}
+
+/* ===== src/hooks/useTheme.js ============================================= */
+
+const KEY = 'em-theme';
+const read = () => {
+  try { const v = localStorage.getItem(KEY); return v === 'dark' || v === 'light' ? v : null; }
+  catch { return null; }   // private mode: fall back to the OS preference
+};
+
+/**
+ * Three states, not two: an explicit choice stamps data-theme, and the
+ * default leaves it off so prefers-color-scheme decides.
+ */
+function useTheme() {
+  const [choice, setChoice] = useState(read);
+  const [systemDark, setSystemDark] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const on = () => setSystemDark(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (choice) root.setAttribute('data-theme', choice);
+    else root.removeAttribute('data-theme');
+  }, [choice]);
+
+  const isDark = choice ? choice === 'dark' : systemDark;
+  const toggle = useCallback(() => {
+    const next = isDark ? 'light' : 'dark';
+    setChoice(next);
+    try { localStorage.setItem(KEY, next); } catch { /* nothing to persist to */ }
+  }, [isDark]);
+
+  return { isDark, toggle };
+}
+
+/* ===== src/hooks/useScrollProgress.js ==================================== */
+
+/**
+ * Scroll progress through the document, plus the measured top and height of
+ * any sections named by selector. Kept in a ref rather than state: this is
+ * read every animation frame and must never trigger a React render.
+ */
+function useScrollProgress(selectors) {
+  const ref = useRef({ p: 0, max: 1, sections: {} });
+
+  useEffect(() => {
+    const state = ref.current;
+
+    const measure = () => {
+      state.max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const next = {};
+      selectors.forEach((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        next[sel] = { top: r.top + window.scrollY, h: r.height };
+      });
+      state.sections = next;
+    };
+    const onScroll = () => { state.p = Math.min(1, Math.max(0, window.scrollY / state.max)); };
+
+    const onResize = () => { measure(); onScroll(); };
+    measure();
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    // late webfonts and images reflow the page under us
+    const t = setTimeout(onResize, 900);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      clearTimeout(t);
+    };
+  }, [selectors]);
+
+  /** 0 when a section's top reaches the bottom of the viewport, 1 when its
+   *  bottom leaves the top. Choreography keys off this, not raw page percent,
+   *  so adding a section never desynchronises the animation. */
+  const sectionProgress = (sel) => {
+    const s = ref.current.sections[sel];
+    if (!s) return 0;
+    const v = (window.scrollY + window.innerHeight - s.top) / (s.h + window.innerHeight);
+    return v < 0 ? 0 : v > 1 ? 1 : v;
+  };
+
+  return { ref, sectionProgress };
+}
+
+/* ===== src/hooks/useSignups.js =========================================== */
+
+/**
+ * The pre-launch list. Writes go to the artifact's document store; the page
+ * only ever reads the size of the collection, never anybody's address.
+ * Resolves to a disabled state wherever the store is unreachable.
+ */
+function useSignups() {
+  const store = useRef(null);
+  const [held, setHeld] = useState(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let stop = null;
+    const claude = typeof window !== 'undefined' ? window.claude : null;
+    if (!claude || typeof claude.use !== 'function') { setReady(true); return undefined; }
+    claude.use('db').then((db) => {
+      setReady(true);
+      if (!db) return;
+      store.current = db;
+      stop = db.collection('signups').limit(1000).onSnapshot(
+        (snap) => setHeld(snap.size),
+        () => setHeld(null),
+      );
+    }).catch(() => setReady(true));
+    return () => { if (stop) stop(); };
+  }, []);
+
+  const hold = useCallback(async (entry) => {
+    if (!store.current) throw Object.assign(new Error('no store'), { code: 'unavailable' });
+    await store.current.collection('signups').add({ ...entry, at: new Date().toISOString() });
+  }, []);
+
+  return { held, hold, ready, available: () => !!store.current };
+}
+
+/* ===== src/components/Logo.jsx =========================================== */
+
+/**
+ * The monogram is a working balance. The beam tips, the pan counter-rotates
+ * so it swings level again, and the pivot dot pops. It fires on hover, on
+ * keyboard focus, and whenever the bowl changes — `tipped` drives that.
+ * The pan rim and pivot take the active bowl's accent.
+ */
+function Logo({ tipped }) {
+  return (
+    <svg viewBox="0 0 200 200" fill="none" aria-hidden="true" className={tipped ? 'tip' : undefined}>
+      <g className="lg-beam">
+        <path d="M18 104h164M46 104l24 26M154 104l-24 26" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
+      </g>
+      <g className="lg-pan">
+        <path
+          d="M32 128h136a10 10 0 0110 10v6c0 34-28 60-63 60h-30c-35 0-63-26-63-60v-6a10 10 0 0110-10z"
+          fill="currentColor"
+        />
+        <rect className="lg-fill" x="32" y="128" width="156" height="13" rx="6.5" />
+      </g>
+      <path d="M100 104V58" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
+      <circle className="lg-dot lg-fill" cx="100" cy="42" r="17" />
+    </svg>
+  );
+}
+
+/* ===== src/components/ThemeToggle.jsx ==================================== */
+
+function ThemeToggle({ isDark, onToggle }) {
+  return (
+    <button
+      type="button"
+      className="theme"
+      onClick={onToggle}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {isDark ? (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.5 14.6A8.6 8.6 0 019.4 3.5a8.6 8.6 0 1011.1 11.1z" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="4.4" />
+          <path d="M12 1.6v2.6M12 19.8v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M1.6 12h2.6M19.8 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/* ===== src/components/SocialLinks.jsx ==================================== */
+
+
+const ICONS = {
+  instagram: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  whatsapp: (
+    <>
+      <path d="M3.5 20.5l1.3-4.2A8.2 8.2 0 1112 20.2a8.4 8.4 0 01-4-1l-4.5 1.3z" />
+      <path d="M8.6 8.2c.4-.1.7 0 .9.4l.6 1.3c.1.3 0 .5-.2.7l-.4.4c-.1.2-.2.3 0 .6a6 6 0 002.6 2.2c.3.1.5 0 .6-.1l.5-.6c.2-.2.4-.2.7-.1l1.3.6c.3.2.4.5.3.8-.2.7-.9 1.3-1.8 1.3-2.5 0-5.9-3.4-5.9-5.9 0-.8.4-1.5 1-1.6z" />
+    </>
+  ),
+  linkedin: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7.4 10.4v6.2M7.4 7.5v.1M11.4 16.6v-6.2M11.4 12.8c0-1.3.9-2.1 2.1-2.1s2.1.8 2.1 2.4v3.5" />
+    </>
+  ),
+  youtube: (
+    <>
+      <rect x="2.5" y="5.5" width="19" height="13" rx="4" />
+      <path d="M10.3 9.6l4.6 2.4-4.6 2.4z" />
+    </>
+  ),
+  email: (
+    <>
+      <rect x="2.6" y="4.8" width="18.8" height="14.4" rx="2.5" />
+      <path d="M3.4 6.6L12 12.7l8.6-6.1" />
+    </>
+  ),
+};
+
+function SocialLinks({ compact }) {
+  return (
+    <div className="socials">
+      {SOCIALS.map((s) => (
+        <a
+          key={s.id}
+          className="social"
+          href={s.url}
+          target={s.id === 'email' ? undefined : '_blank'}
+          rel="noreferrer noopener"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            {ICONS[s.id]}
+          </svg>
+          <span>{s.label}</span>
+          {!compact && <span className="h">{s.handle}</span>}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* ===== src/components/Marquee.jsx ======================================== */
+
+
+function Marquee() {
+  // duplicated once so a -50% translate loops seamlessly
+  const run = [...MARQUEE, ...MARQUEE];
+  return (
+    <div className="mq" aria-hidden="true">
+      <div>
+        {run.map((bit, i) => (
+          <span key={i}>{i % 3 === 1 ? <em>{bit}</em> : bit}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== src/components/ScaleRail.jsx ====================================== */
+
+/** The page is framed as a weighing instrument: the rail reports grams. */
+function ScaleRail({ railRef }) {
+  return (
+    <div className="rail" aria-hidden="true">
+      <div className="rail-ticks" />
+      <div className="rail-read" ref={railRef}>
+        <b>0</b>
+        <span>GRAMS</span>
+      </div>
+      <div className="rail-cap">NET WEIGHT</div>
+    </div>
+  );
+}
+
+/* ===== src/components/Loader.jsx ========================================= */
+
+/** The scale zeroing, then weighing up to a full box. */
+function Loader() {
+  const [k, setK] = useState(0);
+  const [gone, setGone] = useState(false);
+  const raf = useRef(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    const DUR = 1100;
+    const tick = () => {
+      const v = Math.min(1, (performance.now() - start) / DUR);
+      setK(v);
+      if (v < 1) { raf.current = requestAnimationFrame(tick); return; }
+      setTimeout(() => setGone(true), 560);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, []);
+
+  if (gone) return null;
+  const steps = ['Zeroing the scale', 'Weighing components', 'Printing the label'];
+  return (
+    <div className={`loader${k >= 1 ? ' done' : ''}`}>
+      <div className="lname">Eat<em>Makro</em></div>
+      <div className="lbar"><i style={{ width: `${k * 100}%` }} /></div>
+      <div className="lrow">
+        <span>{steps[Math.min(2, Math.floor(k * 3))]}</span>
+        <span className="mono">{Math.round(k * 620)} g</span>
+      </div>
+    </div>
+  );
+}
+
+/* ===== src/components/Header.jsx ========================================= */
+
+
+
+
+function Header({ isDark, onToggleTheme, logoTipped }) {
+  return (
+    <header className="header">
+      <a className={`brand${logoTipped ? ' tip' : ''}`} href="#top" aria-label="EatMakro, home">
+        <Logo />
+        Eat<span className="hot">Makro</span>
+      </a>
+      <nav className="nav">
+        {NAV.map((n) => (
+          <a key={n.label} className="navlink" href={n.href}>
+            {n.label}
+          </a>
+        ))}
+        <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
+        <a className="btn" href="#hold">Hold a slot</a>
+      </nav>
+    </header>
+  );
+}
+
+/* ===== src/components/Footer.jsx ========================================= */
+
+
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="col">
+        <span className="sig">EatMakro</span>
+        <span>Weighed, not guessed.</span>
+        <span>Hyderabad · pre-launch</span>
+      </div>
+      <div className="col">
+        <span className="mono">Returnable steel · no disposable box</span>
+        <span className="mono">Direct to customer · no aggregator</span>
+        <a href="#hold">Hold a slot</a>
+      </div>
+      <div className="col">
+        <span className="mono">Find us</span>
+        <SocialLinks compact />
+      </div>
+    </footer>
+  );
+}
+
+/* ===== src/components/Hero.jsx =========================================== */
+
+function Hero({ bowl, size }) {
+  const d = bowl[size];
+  return (
+    <section className="sec hero" id="top">
+      <h1>Weighed,<br /><span className="lo">not</span> <em>guessed.</em></h1>
+      <p className="lede">
+        Four high-protein bowls cooked in Hyderabad every morning, put on a bench scale
+        component by component, and sealed. You get the grams. Not an adjective.
+      </p>
+      <div className="stats">
+        <div className="stat"><b className="mono">{d.p} g</b><span>protein, {bowl.name}</span></div>
+        <div className="stat"><b className="mono">{d.k}</b><span>kcal, measured</span></div>
+        <div className="stat"><b className="mono">₹230</b><span>per meal, 20-day</span></div>
+        <div className="stat"><b className="mono">12:30–1:15</b><span>desk drop</span></div>
+      </div>
+    </section>
+  );
+}
+
+/* ===== src/components/BowlPicker.jsx ===================================== */
+
+
+function BowlPicker({ currentId, onSelect }) {
+  return (
+    <section className="sec" id="choose">
+      <div className="marker mono">4 bowls</div>
+      <h2>Pick a bowl. The whole page follows it.</h2>
+      <p className="lede">
+        Four rotations, one kitchen. Choose one and watch the dabba empty out and refill —
+        every ingredient is modelled, and the site takes its colour from whatever is in the box.
+      </p>
+      <div className="bowls" role="group" aria-label="Choose a bowl">
+        {BOWLS.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            className="bowl"
+            style={{ '--bc': b.accent.light }}
+            aria-pressed={b.id === currentId}
+            onClick={() => onSelect(b.id)}
+          >
+            <span className="swatch" style={{ background: b.swatch }} />
+            <span className="bt">{b.tag}</span>
+            <span className="bn">{b.name}</span>
+            <span className="bm">{b.cut.p} g protein · {b.cut.k} kcal</span>
+          </button>
+        ))}
+      </div>
+      <p>
+        Your plan is tied to one bowl so the rider carries a single rotation. Changing it later
+        is a message to the kitchen, not a checkout step.
+      </p>
+    </section>
+  );
+}
+
+/* ===== src/components/SpecTable.jsx ====================================== */
+
+function SpecTable({ bowl, size }) {
+  return (
+    <section className="sec" id="box">
+      <div className="marker mono">{bowl[size].net} g</div>
+      <h2>Six things, each one weighed.</h2>
+      <p className="lede">
+        Nothing is scooped by eye. Every component goes on the scale before it goes in the
+        dabba, and the box is weighed again once it is sealed.
+      </p>
+      <table className="spec">
+        <caption className="mono">
+          {bowl.name} · {size} portion · cooked weights · batch HYD·0417
+        </caption>
+        <thead>
+          <tr><th scope="col">Component</th><th scope="col" className="g">Weight</th></tr>
+        </thead>
+        <tbody>
+          {bowl.items.map(([name, grams, colour, note]) => (
+            <tr key={name}>
+              <th scope="row">
+                <span className="dot" style={{ background: colour }} />{name}
+                <div className="note">{note}</div>
+              </th>
+              <td className="g mono">{grams} g</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Net weight</th><td className="g mono">{bowl[size].net} g</td></tr>
+        </tfoot>
+      </table>
+      <p>
+        The dabba itself is stainless steel and it is ours. Your rider takes yesterday's back
+        when today's arrives, so nothing about this meal is disposable except the sticker.
+      </p>
+    </section>
+  );
+}
+
+/* ===== src/components/MacroTiles.jsx ===================================== */
+
+const CEIL = { p: 90, c: 120, f: 40, k: 900 };
+
+function MacroTiles({ bowl, size }) {
+  const d = bowl[size];
+  const tiles = [
+    { key: 'p', cls: 'tile hot', value: `${d.p} g`, label: 'protein', pct: d.p / CEIL.p },
+    { key: 'c', cls: 'tile', value: `${d.c} g`, label: 'carbs', pct: d.c / CEIL.c },
+    { key: 'f', cls: 'tile fat', value: `${d.f} g`, label: 'fat', pct: d.f / CEIL.f },
+    { key: 'k', cls: 'tile', value: String(d.k), label: 'kcal', pct: d.k / CEIL.k },
+  ];
+  return (
+    <section className="sec" id="label">
+      <div className="marker mono">{d.p} g</div>
+      <h2>The label is the product.</h2>
+      <p className="lede">
+        A photo of a bowl tells you nothing. The lid carries the numbers the kitchen actually
+        measured, printed after the box is sealed — not before it is cooked.
+      </p>
+      <div className="macros">
+        {tiles.map((t) => (
+          <div className={t.cls} key={t.key}>
+            <b className="mono">{t.value}</b>
+            <div className="k">{t.label}</div>
+            <div className="bar"><i style={{ width: `${Math.min(100, t.pct * 100)}%` }} /></div>
+          </div>
+        ))}
+      </div>
+      <div className="batch mono">
+        WEIGHED HYD·0417 &nbsp;·&nbsp; {bowl.name.toUpperCase()} &nbsp;·&nbsp; NET {d.net} g &nbsp;·&nbsp; EAT WITHIN 6 h
+      </div>
+    </section>
+  );
+}
+
+/* ===== src/components/PortionSwitch.jsx ================================== */
+
+function PortionSwitch({ bowl, size, onSize }) {
+  const d = bowl[size];
+  return (
+    <section className="sec" id="portions">
+      <div className="marker mono">{bowl.cut.grain} g / {bowl.bulk.grain} g</div>
+      <h2>Cut or bulk. Pick one and the box changes.</h2>
+      <p className="lede">
+        Same kitchen, same 5 ml of oil, different weights on the scale. Switch it here and
+        watch the bowl rebuild itself.
+      </p>
+      <div className="switch" role="group" aria-label="Portion size">
+        <button type="button" aria-pressed={size === 'cut'} onClick={() => onSize('cut')}>Cut</button>
+        <button type="button" aria-pressed={size === 'bulk'} onClick={() => onSize('bulk')}>Bulk</button>
+      </div>
+      <div className="portion-read">
+        <div><b className="mono">{d.grain} g</b><span>{bowl.grainLabel}</span></div>
+        <div><b className="mono">{d.prot} g</b><span>{bowl.proteinLabel}</span></div>
+        <div><b className="mono">{d.net} g</b><span>net weight</span></div>
+      </div>
+      <p>
+        Riders carry one type each, so a cut round and a bulk round leave the kitchen
+        separately. That is why the plan asks which one you want up front rather than letting
+        you change it meal to meal.
+      </p>
+    </section>
+  );
+}
+
+/* ===== src/components/PlanGrid.jsx ======================================= */
+
+
+function PlanGrid({ selectedPlanId, onChoose }) {
+  return (
+    <section className="sec" id="plans">
+      <div className="marker mono">₹230</div>
+      <h2>Longer plan, lower rate.</h2>
+      <p className="lede">
+        One meal a day, six days a week. Sunday the kitchen is cleaned, so there is no drop.
+      </p>
+      <div className="plans">
+        {PLANS.map((pl) => {
+          const chosen = pl.id === selectedPlanId;
+          return (
+            <div className={`plan${pl.pick ? ' pick' : ''}${chosen ? ' chosen' : ''}`} key={pl.id}>
+              {pl.pick && <div className="flag mono">MOST TAKEN</div>}
+              <div className="rate mono">₹{pl.rate}</div>
+              <div className="len">{pl.length}</div>
+              <div className="per mono">{pl.total} total</div>
+              <button
+                type="button"
+                className="plan-pick"
+                aria-pressed={chosen}
+                onClick={() => onChoose?.(pl.id)}
+              >
+                {chosen ? 'Chosen — go to sign-up' : 'Choose this plan'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <p>
+        Prices are per meal and include delivery inside the live zones. All four bowls cost the
+        same, and cut and bulk cost the same — the difference is weight, not price.
+      </p>
+    </section>
+  );
+}
+
+/* ===== src/components/DayTimeline.jsx ==================================== */
+
+
+/**
+ * The kitchen's own morning, cook to drop. Ends exactly at the hero's
+ * "12:30–1:15 desk drop" stat, so the two never drift apart.
+ */
+function DayTimeline() {
+  return (
+    <section className="sec" id="day">
+      <div className="marker mono">05:30 &#8594; 13:15</div>
+      <h2>One box, from marinade to your desk.</h2>
+      <p className="lede">
+        The scale isn't the only fixed point in the morning — everything else is built
+        around getting a box from a cold pan to a warm desk inside one window.
+      </p>
+      <ol className="timeline">
+        {DAY_TIMELINE.map((step, i) => (
+          <li className="tl-step" key={step.time}>
+            <div className="tl-rail">
+              <span className="tl-dot" />
+              {i < DAY_TIMELINE.length - 1 && <span className="tl-line" />}
+            </div>
+            <div className="tl-body">
+              <div className="tl-time mono">{step.time}</div>
+              <h3 className="tl-label">{step.label}</h3>
+              <p className="tl-copy">{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/* ===== src/components/DeliveryMap.jsx ==================================== */
+
+
+const VB = 320;                 // square viewBox
+const CX = VB / 2, CY = VB / 2;
+const PX_PER_KM = 26;            // fits the 4 km ring with margin for labels
+
+const toXY = (km) => ({
+  x: CX + (km.x - KITCHEN.x) * PX_PER_KM,
+  y: CY - (km.y - KITCHEN.y) * PX_PER_KM,   // north is up: flip for SVG's y-down
+});
+
+/**
+ * A locator map, not a road map: the kitchen at the centre, a 4 km ring
+ * around it, and each area placed at its real compass direction and
+ * roughly its real distance. It exists to make "we only deliver where a
+ * rider can reach" checkable at a glance, not to navigate by.
+ */
+function DeliveryMap() {
+  const ringR = DELIVERY_RADIUS_KM * PX_PER_KM;
+  const kitchen = toXY(KITCHEN);
+
+  return (
+    <div className="map-wrap">
+      <svg viewBox={`0 0 ${VB} ${VB}`} role="img" aria-label="Map of the 4 kilometre delivery radius around the kitchen, with live and upcoming areas marked">
+        {/* ring gauge: 1 km grid so the radius is legible, not just decorative */}
+        {[1, 2, 3, 4].map((km) => (
+          <circle
+            key={km}
+            cx={kitchen.x} cy={kitchen.y} r={km * PX_PER_KM}
+            className={km === DELIVERY_RADIUS_KM ? 'map-ring map-ring-edge' : 'map-ring'}
+          />
+        ))}
+        <line x1={kitchen.x} y1={kitchen.y} x2={kitchen.x} y2={kitchen.y - ringR} className="map-radial" />
+        <text x={kitchen.x + 5} y={kitchen.y - ringR + 12} className="map-radial-label mono">4 km</text>
+
+        {/* the kitchen: a small steel dabba glyph at the centre */}
+        <g transform={`translate(${kitchen.x} ${kitchen.y})`}>
+          <circle r="15" className="map-kitchen-halo" />
+          <path
+            d="M-8 2h16a2 2 0 012 2v1c0 5-4 9-10 9s-10-4-10-9v-1a2 2 0 012-2z"
+            className="map-kitchen-body"
+          />
+          <rect x="-8" y="2" width="16" height="2.4" rx="1.2" className="map-kitchen-rim" />
+        </g>
+        <text x={kitchen.x} y={kitchen.y + 30} textAnchor="middle" className="map-kitchen-label mono">KITCHEN</text>
+
+        {/* each delivery area, live or next */}
+        {AREAS.map((a) => {
+          const p = toXY(a);
+          const dist = Math.hypot(a.x - KITCHEN.x, a.y - KITCHEN.y).toFixed(1);
+          const above = p.y > CY;
+          return (
+            <g key={a.name} className={`map-area map-area-${a.state}`}>
+              <circle cx={p.x} cy={p.y} r="6" className="map-dot" />
+              {a.state === 'live' && <circle cx={p.x} cy={p.y} r="6" className="map-dot-pulse" />}
+              <text
+                x={p.x} y={above ? p.y + 20 : p.y - 12}
+                textAnchor="middle" className="map-area-name"
+              >
+                {a.name}
+              </text>
+              <text
+                x={p.x} y={above ? p.y + 33 : p.y - 25}
+                textAnchor="middle" className="map-area-dist mono"
+              >
+                {dist} km
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="map-key">
+        <span className="map-key-item"><i className="map-key-dot live" />Live</span>
+        <span className="map-key-item"><i className="map-key-dot next" />Next</span>
+        <span className="map-key-note mono">Approximate — not for turn-by-turn use</span>
+      </div>
+    </div>
+  );
+}
+
+/* ===== src/components/DeliveryAreas.jsx ================================== */
+
+
+
+function DeliveryAreas() {
+  return (
+    <section className="sec" id="where">
+      <div className="marker mono">4 km</div>
+      <h2>A four kilometre radius, on purpose.</h2>
+      <p className="lede">
+        Food cooked at 11 should not be in a bag at 2. We only take addresses a rider can
+        reach inside the drop window.
+      </p>
+      <DeliveryMap />
+      <div className="areas">
+        {AREAS.map((a) => (
+          <span className={`area ${a.state}`} key={a.name}>
+            {a.name} <i>{a.state}</i>
+          </span>
+        ))}
+      </div>
+      <p>
+        The kitchen has a camera over the prep counter and the scale is in frame. If you want
+        to see the box you are eating being weighed, ask and we will send you the clip.
+      </p>
+    </section>
+  );
+}
+
+/* ===== src/components/HoldSlot.jsx ======================================= */
+
+
+
+
+
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+
+function HoldSlot({ currentBowlName, selectedPlanId, onPlanChange }) {
+  const { held, hold, available } = useSignups();
+  const [email, setEmail] = useState('');
+  const [area, setArea] = useState(AREAS[0].name);
+  const [bowl, setBowl] = useState(currentBowlName);
+  const [portion, setPortion] = useState('Cut');
+  const [planId, setPlanId] = useState(selectedPlanId);
+  const [said, setSaid] = useState({ text: '', bad: false });
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  // the bowl picker and the "Choose this plan" buttons live elsewhere on the
+  // page — keep the form's defaults following them until the visitor edits
+  useEffect(() => setBowl(currentBowlName), [currentBowlName]);
+  useEffect(() => setPlanId(selectedPlanId), [selectedPlanId]);
+
+  const submit = async (ev) => {
+    ev.preventDefault();
+    if (done) return;
+    const value = email.trim();
+    if (!EMAIL.test(value)) {
+      setSaid({ text: 'That email is missing something. Check it and try again.', bad: true });
+      return;
+    }
+    if (!available()) {
+      setSaid({ text: 'Sign-ups are not reachable from this view. Open the published page to hold a slot.', bad: true });
+      return;
+    }
+    setBusy(true);
+    setSaid({ text: 'Holding…', bad: false });
+    const plan = PLANS.find((p) => p.id === planId)?.length ?? planId;
+    try {
+      await hold({ email: value, area, bowl, portion, plan });
+      setDone(true);
+      setSaid({ text: `You are on the list. We will write to you before ${area} opens.`, bad: false });
+    } catch (err) {
+      setBusy(false);
+      setSaid({
+        text: err && err.code === 'quota_exceeded'
+          ? 'The pre-launch list is full for now. Try again in a few days.'
+          : 'That did not save. Try once more.',
+        bad: true,
+      });
+    }
+  };
+
+  return (
+    <section className="sec" id="hold">
+      <div className="marker mono">Pre-launch</div>
+      <h2>Hold a slot.</h2>
+      <p className="lede">
+        We can cook about 70 boxes a day at launch. Leave an email and we will tell you when
+        your area opens, before it goes public.
+      </p>
+      <form className="form" onSubmit={submit} noValidate>
+        <div>
+          <label htmlFor="fEmail">Email</label>
+          <input
+            id="fEmail" type="email" inputMode="email" autoComplete="email"
+            placeholder="you@work.com" value={email}
+            onChange={(e) => setEmail(e.target.value)} required
+          />
+        </div>
+        <div className="row">
+          <div>
+            <label htmlFor="fArea">Area</label>
+            <select id="fArea" value={area} onChange={(e) => setArea(e.target.value)}>
+              {AREAS.map((a) => <option key={a.name}>{a.name}</option>)}
+              <option>Somewhere else</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="fBowl">Bowl</label>
+            <select id="fBowl" value={bowl} onChange={(e) => setBowl(e.target.value)}>
+              {BOWLS.map((b) => <option key={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="row">
+          <div>
+            <label htmlFor="fPortion">Portion</label>
+            <select id="fPortion" value={portion} onChange={(e) => setPortion(e.target.value)}>
+              <option>Cut</option><option>Bulk</option><option>Not sure yet</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="fPlan">Plan</label>
+            <select
+              id="fPlan" value={planId}
+              onChange={(e) => { setPlanId(e.target.value); onPlanChange?.(e.target.value); }}
+            >
+              {PLANS.map((p) => <option key={p.id} value={p.id}>{p.length} · ₹{p.rate}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <button className="btn" type="submit" disabled={busy || done}>
+            {done ? 'Slot held' : 'Hold a slot'}
+          </button>
+        </div>
+        <div className="count mono">
+          {held === null ? ' '
+            : held === 0 ? 'No slots held yet. Be the first.'
+            : <><b>{held}</b> {held === 1 ? 'slot' : 'slots'} held so far.</>}
+        </div>
+        <div className={`said mono${said.bad ? ' bad' : ''}`} role="status">{said.text}</div>
+      </form>
+      <p style={{ marginTop: 28 }}>Or come and find us before launch.</p>
+      <SocialLinks />
+    </section>
+  );
+}
+
+/* ===== src/components/Annotations.jsx ==================================== */
+
+/**
+ * Six HTML chips projected onto 3D anchor points every frame, each joined to
+ * its anchor by a dashed leader line. The scene writes straight into these
+ * refs — routing 60 fps position updates through React state would be
+ * pointless work.
+ */
+function Annotations({ hostRef, chipRefs, lineRefs, items }) {
+  return (
+    <div className="annos" aria-hidden="true" ref={hostRef}>
+      <svg>
+        {items.map((_, i) => (
+          <path
+            key={i}
+            ref={(n) => { lineRefs.current[i] = n; }}
+            fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3"
+          />
+        ))}
+      </svg>
+      {items.map(([name, grams], i) => (
+        <div className="chip" key={name} ref={(n) => { chipRefs.current[i] = n; }} style={{ opacity: 0 }}>
+          <b>{grams} g</b>
+          <span>{name.split(',')[0]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ===== src/components/BowlScene.jsx ====================================== */
+
+
+
+
+
+
+
+
+
+
+/* Camera keyframes are anchored to sections rather than raw page percent, so
+   adding or editing a section never desynchronises the choreography. */
+const CAMK = [
+  { sel: null,        f: 0,    pos: [0.28, 2.30, 4.05],  tgt: [0, 0.44, 0] },
+  { sel: '#choose',   f: 0.45, pos: [1.00, 2.05, 3.85],  tgt: [0, 0.50, 0] },
+  { sel: '#box',      f: 0.26, pos: [0.00, 2.45, 5.85],  tgt: [0, 1.35, 0] },
+  { sel: '#box',      f: 0.86, pos: [-0.45, 1.95, 4.55], tgt: [0, 0.68, 0] },
+  { sel: '#label',    f: 0.50, pos: [1.95, 3.40, 2.55],  tgt: [0, 0.45, 0] },
+  { sel: '#portions', f: 0.50, pos: [0.10, 1.75, 3.55],  tgt: [0, 0.50, 0] },
+  { sel: '#plans',    f: 0.60, pos: [0.00, 2.05, 4.35],  tgt: [0, 0.80, 0] },
+  { sel: '#where',    f: 0.50, pos: [-1.95, 1.75, 4.30], tgt: [0, 0.72, 0] },
+  { sel: '#hold',     f: 0.95, pos: [0.35, 1.30, 6.25],  tgt: [0, 0.62, 0] },
+];
+const EXPLODE = {
+  grain: [0, 0.52, 0], prot: [0.10, 1.24, 0.02],
+  veg: [-0.14, 1.98, -0.04], top: [0.06, 2.62, 0.06],
+};
+const CHIP_OFFSET = [[-146, 4], [140, 10], [148, -16], [-150, 16], [138, -12], [-142, 18]];
+const CHIP_LAYER = ['prot', 'grain', 'veg', 'veg', 'top', null];
+const CHIP_ANCHOR = ['prot', 'grain', 'veg', 'veg2', 'top', 'masala'];
+
+function BowlScene({ bowlId, size, reduced, isDark, railRef, scroll }) {
+  const stageRef = useRef(null);
+  const hostRef = useRef(null);
+  const chipRefs = useRef([]);
+  const lineRefs = useRef([]);
+  const S = useRef({ ready: false });
+  const bowl = BOWL_BY_ID[bowlId];
+
+  /* -------------------------------------------------------------- build */
+  useEffect(() => {
+    const stage = stageRef.current;
+    const s = S.current;
+    let raf = 0;
+
+    try {
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.94;
+      stage.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      scene.environment = studioEnv(renderer);
+      kitchenRig(scene);
+      const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+
+      const meal = new THREE.Group();
+      scene.add(meal);
+
+      const shadow = new THREE.Group();
+      shadow.add(contactShadow(2.4, 0.82));
+      shadow.position.y = -0.01;
+      const bowlLayer = new THREE.Group();
+      bowlLayer.add(steelBowl());
+      const lidLayer = new THREE.Group();
+      lidLayer.add(steelLid());
+      lidLayer.position.y = 0.70;
+      const labelLayer = new THREE.Group();
+      const labelMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.28, 0.8),
+        new THREE.MeshStandardMaterial({
+          map: labelTexture(bowl, size), roughness: 0.86, transparent: true, side: THREE.DoubleSide,
+        }),
+      );
+      labelMesh.rotation.x = -Math.PI / 2;
+      labelMesh.position.y = 0.88;
+      labelLayer.add(labelMesh);
+      meal.add(shadow, bowlLayer, lidLayer, labelLayer);
+
+      const steam = new THREE.Group();
+      for (let i = 0; i < 3; i++) {
+        const rib = steamRibbon(i * 2.1);
+        rib.position.set(-0.3 + i * 0.3, 0.55, -0.1 + i * 0.16);
+        steam.add(rib);
+      }
+      meal.add(steam);
+
+      const sprinkle = new THREE.InstancedMesh(flake(), mat(0x7d9660, 0.72, { transparent: true, opacity: 0 }), 90);
+      sprinkle.visible = false;
+      meal.add(sprinkle);
+
+      const cache = {};
+      const getContents = (id) => {
+        if (!cache[id]) { cache[id] = buildContents(id); cache[id].visible = false; meal.add(cache[id]); }
+        return cache[id];
+      };
+      const active = getContents(bowlId);
+      active.visible = true;
+
+      Object.assign(s, {
+        ready: true, renderer, scene, camera, meal, shadow, bowlLayer, lidLayer,
+        labelLayer, labelMesh, steam, sprinkle, cache, getContents,
+        active, activeId: bowlId, size, outgoing: null, swapT: 1, p: 0, lastG: -1,
+        rect: null, rectAge: 0, grainScale: 0.78, protScale: 1,
+        dummy: new THREE.Object3D(), v3: new THREE.Vector3(),
+        camK: CAMK.map((k) => ({ ...k, p: 0 })),
+      });
+
+      const measureCam = () => {
+        const max = scroll.ref.current.max;
+        let prev = 0;
+        s.camK.forEach((k) => {
+          let v = 0;
+          if (k.sel) {
+            const sec = scroll.ref.current.sections[k.sel];
+            if (sec) v = clamp01((k.f * (sec.h + window.innerHeight) + sec.top - window.innerHeight) / max);
+          }
+          k.p = Math.max(v, prev + 0.004);
+          prev = k.p;
+        });
+      };
+      const resize = () => {
+        const w = stage.clientWidth, h = stage.clientHeight;
+        if (!w || !h) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        s.rectAge = 0;
+        measureCam();
+      };
+      resize();
+      setTimeout(measureCam, 950);
+      window.addEventListener('resize', resize);
+
+      const sampleCam = (q) => {
+        let i = 0;
+        while (i < s.camK.length - 2 && q > s.camK[i + 1].p) i++;
+        const a = s.camK[i], b = s.camK[i + 1];
+        const t = ease(clamp01((q - a.p) / (b.p - a.p || 1)));
+        return {
+          pos: a.pos.map((v, j) => lerp(v, b.pos[j], t)),
+          tgt: a.tgt.map((v, j) => lerp(v, b.tgt[j], t)),
+        };
+      };
+
+      const t0 = performance.now();
+      const frame = () => {
+        raf = requestAnimationFrame(frame);
+        if (document.hidden) return;
+        const t = (performance.now() - t0) / 1000;
+        s.p += (scroll.ref.current.p - s.p) * 0.09;
+        const p = s.p;
+
+        const sBox = scroll.sectionProgress('#box');
+        const sPlans = scroll.sectionProgress('#plans');
+        const sHold = scroll.sectionProgress('#hold');
+        const e = ease(ramp(sBox, 0.06, 0.34) * (1 - ramp(sBox, 0.6, 0.88)));
+        const seal = ease(ramp(sPlans, 0.05, 0.55));
+        const stick = ease(ramp(sPlans, 0.5, 0.9));
+        const drift = ramp(sHold, 0.25, 0.85);
+
+        /* --- bowl swap: old contents sink and shrink, new ones rise in --- */
+        if (s.swapT < 1) s.swapT = Math.min(1, s.swapT + 0.022);
+        const kOld = 1 - clamp01(s.swapT / 0.44);
+        const kNew = ease(clamp01((s.swapT - 0.4) / 0.6));
+        if (s.outgoing) {
+          s.outgoing.visible = kOld > 0.01;
+          s.outgoing.scale.setScalar(Math.max(0.001, kOld));
+          s.outgoing.position.y = -0.55 * (1 - kOld);
+          if (kOld <= 0.01) { s.outgoing.visible = false; s.outgoing = null; }
+        }
+        s.active.scale.setScalar(Math.max(0.001, kNew));
+        s.active.position.y = -0.55 * (1 - kNew);
+
+        /* --- explode / reassemble --- */
+        const L = s.active.userData.L;
+        Object.keys(EXPLODE).forEach((k) => {
+          const v = EXPLODE[k];
+          L[k].position.set(v[0] * e, v[1] * e, v[2] * e);
+        });
+        s.bowlLayer.position.y = -0.38 * e;
+
+        /* --- portion: the model changes, not only the copy --- */
+        const wantGrain = size === 'cut' ? 0.78 : 1.18;
+        s.grainScale += (wantGrain - s.grainScale) * 0.1;
+        L.grain.scale.set(s.grainScale, s.grainScale * 0.92, s.grainScale);
+        const kids = L.prot.children;
+        if (kids.length >= 5) {
+          const want = size === 'cut' ? Math.ceil(kids.length * 0.57) : kids.length;
+          kids.forEach((c, i) => {
+            const target = i < want ? 1 : 0;
+            c.userData.k = c.userData.k === undefined ? target : c.userData.k + (target - c.userData.k) * 0.12;
+            const k = c.userData.k;
+            c.scale.setScalar(Math.max(0.001, k));
+            c.visible = k > 0.02;
+            c.position.y = (c.userData.baseY = c.userData.baseY ?? c.position.y) + (1 - k) * 0.45;
+          });
+        } else {
+          const wantP = size === 'cut' ? 0.88 : 1.2;
+          s.protScale += (wantP - s.protScale) * 0.1;
+          L.prot.scale.setScalar(s.protScale);
+        }
+
+        /* --- seal + label print --- */
+        s.lidLayer.position.y = lerp(3.4, 0.7, seal);
+        s.lidLayer.visible = seal > 0.002;
+        s.lidLayer.rotation.y = (1 - seal) * 1.4;
+        s.labelLayer.visible = stick > 0.01;
+        s.labelMesh.scale.setScalar(Math.max(0.001, stick) * 0.86);
+        s.labelMesh.position.y = lerp(1.35, 0.88, stick);
+
+        /* --- steam, only while the box is open --- */
+        const steamA = (1 - ramp(sBox, 0, 0.22)) * (1 - seal) * (1 - drift);
+        s.steam.visible = steamA > 0.01;
+        s.steam.children.forEach((rb, i) => {
+          const ph = (t * 0.34 + i * 0.33) % 1;
+          rb.material.opacity = 0.15 * steamA * Math.sin(ph * Math.PI);
+          rb.scale.set(1, 0.5 + ph * 0.9, 1);
+          rb.position.y = 0.55 + ph * 0.35;
+          rb.rotation.y = t * 0.25 + i;
+        });
+
+        /* --- garnish burst during a swap --- */
+        if (s.swapT < 1) {
+          const sp = clamp01((s.swapT - 0.34) / 0.62);
+          s.sprinkle.visible = sp > 0.01;
+          s.sprinkle.material.opacity = 0.95 * (1 - ramp(sp, 0.78, 1));
+          for (let i = 0; i < 90; i++) {
+            const kk = ease(clamp01((sp - hash3(i, 5, 5) * 0.4) / 0.6));
+            const a = hash3(i, 1, 3) * 6.2832;
+            const rr = Math.sqrt(hash3(i, 4, 2)) * 0.78;
+            s.dummy.position.set(Math.cos(a) * rr, lerp(2.9, 0.56 + hash3(i, 7, 1) * 0.08, kk), Math.sin(a) * rr);
+            s.dummy.rotation.set(kk * 6 + a, a * 2, kk * 4);
+            s.dummy.scale.setScalar(1);
+            s.dummy.updateMatrix();
+            s.sprinkle.setMatrixAt(i, s.dummy.matrix);
+          }
+          s.sprinkle.instanceMatrix.needsUpdate = true;
+        } else if (s.sprinkle.visible) {
+          s.sprinkle.visible = false;
+        }
+
+        /* --- root motion --- */
+        const idle = reduced ? 0 : 1;
+        const spin = s.swapT < 1 ? ease(s.swapT) * 6.2832 : 0;
+        s.meal.rotation.y = -0.55 + p * 2.7 + spin + Math.sin(t * 0.55) * 0.04 * idle;
+        s.meal.rotation.z = Math.sin(sBox * Math.PI) * 0.03;
+        s.meal.position.y = Math.sin(t * 0.7) * 0.025 * idle + drift * 0.5;
+        s.meal.scale.setScalar(1 - drift * 0.22);
+        s.shadow.children[0].material.opacity = 0.82 * (1 - drift);
+        s.shadow.position.y = -0.01 - s.meal.position.y * 0.9;
+
+        const dolly = Math.min(2.2, Math.max(1, 1.16 / s.camera.aspect));
+        const c = sampleCam(p);
+        s.camera.position.set(c.pos[0] * dolly, c.tgt[1] + (c.pos[1] - c.tgt[1]) * dolly, c.pos[2] * dolly);
+        s.camera.lookAt(c.tgt[0], c.tgt[1], c.tgt[2]);
+        s.renderer.render(s.scene, s.camera);
+
+        projectChips(ramp(sBox, 0.18, 0.3) * (1 - ramp(sBox, 0.56, 0.74)));
+        updateRail(p);
+      };
+
+      const projectChips = (visRaw) => {
+        const vis = (window.innerWidth < 901 || s.swapT < 1) ? 0 : visRaw;
+        const chips = chipRefs.current, lines = lineRefs.current;
+        if (!chips[0]) return;
+        if (vis < 0.01) {
+          if (chips[0].style.opacity !== '0') {
+            chips.forEach((c, i) => { c.style.opacity = '0'; lines[i]?.setAttribute('d', ''); });
+          }
+          return;
+        }
+        if (--s.rectAge < 0) { s.rect = stage.getBoundingClientRect(); s.rectAge = 30; }
+        const anchors = BOWL_BY_ID[s.activeId ?? bowlId].anchors;
+        const L = s.active.userData.L;
+        for (let i = 0; i < 6; i++) {
+          if (!chips[i]) continue;
+          const a = anchors[CHIP_ANCHOR[i]];
+          s.v3.set(a[0], a[1], a[2]);
+          const layerName = CHIP_LAYER[i];
+          if (layerName) {
+            s.v3.add(L[layerName].position).multiplyScalar(s.active.scale.x);
+            s.v3.y += s.active.position.y;
+          } else {
+            s.v3.add(s.bowlLayer.position);
+          }
+          s.meal.localToWorld(s.v3);
+          s.v3.project(s.camera);
+          const ax = s.rect.left + (s.v3.x * 0.5 + 0.5) * s.rect.width;
+          const ay = s.rect.top + (-s.v3.y * 0.5 + 0.5) * s.rect.height;
+          const cx = ax + CHIP_OFFSET[i][0], cy = ay + CHIP_OFFSET[i][1];
+          chips[i].style.transform = `translate(-50%,-50%) translate(${cx.toFixed(1)}px,${cy.toFixed(1)}px)`;
+          chips[i].style.opacity = vis.toFixed(2);
+          const mid = CHIP_OFFSET[i][0] > 0 ? cx - 46 : cx + 46;
+          lines[i]?.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)}L${mid.toFixed(1)} ${cy.toFixed(1)}`);
+          lines[i]?.setAttribute('opacity', vis.toFixed(2));
+        }
+      };
+
+      const updateRail = (p) => {
+        const node = railRef.current;
+        if (!node) return;
+        const g = Math.round(p * BOWL_BY_ID[s.activeId ?? bowlId][s.size ?? size].net);
+        if (g !== s.lastG) { node.firstChild.textContent = String(g); s.lastG = g; }
+        node.style.transform = `translateY(${(54 + p * (window.innerHeight - 108)).toFixed(0)}px)`;
+      };
+
+      frame();
+      /* the other three rotations are built just after first paint, so the
+         first frame is never held up by geometry nobody can see yet */
+      const warm = setTimeout(() => {
+        ['tikka', 'paneer', 'chana', 'egg'].forEach((id) => getContents(id));
+      }, 450);
+
+      return () => {
+        cancelAnimationFrame(raf);
+        clearTimeout(warm);
+        window.removeEventListener('resize', resize);
+        renderer.dispose();
+        if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+        s.ready = false;
+      };
+    } catch (err) {
+      // No WebGL, or a driver that refuses: the page must still read.
+      console.error('EatMakro scene failed to start:', err);
+      stage.style.display = 'none';
+      document.querySelector('.main')?.classList.add('wide');
+      return undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ------------------------------------------------------ react to props */
+  useEffect(() => {
+    const s = S.current;
+    if (!s.ready || s.activeId === bowlId) return;
+    const next = s.getContents(bowlId);
+    if (next === s.active) { s.activeId = bowlId; return; }
+    s.outgoing = s.active;
+    s.active = next;
+    s.active.visible = true;
+    s.active.scale.setScalar(0.001);
+    s.activeId = bowlId;
+    s.swapT = 0;
+  }, [bowlId]);
+
+  useEffect(() => {
+    const s = S.current;
+    if (!s.ready) return;
+    s.size = size;
+    s.labelMesh.material.map.dispose();
+    s.labelMesh.material.map = labelTexture(BOWL_BY_ID[bowlId], size);
+    s.labelMesh.material.needsUpdate = true;
+  }, [bowlId, size]);
+
+  useEffect(() => {
+    const s = S.current;
+    if (s.ready) s.renderer.toneMappingExposure = isDark ? 0.84 : 0.94;
+  }, [isDark]);
+
+  return (
+    <>
+      <div className="stage" ref={stageRef} aria-hidden="true" />
+      <Annotations hostRef={hostRef} chipRefs={chipRefs} lineRefs={lineRefs} items={bowl.items} />
+    </>
+  );
+}
+
+/* ===== src/pages/Home.jsx ================================================ */
+
+
+
+
+
+
+
+
+
+
+
+const HOME_SECTIONS = ['#choose', '#box', '#label', '#portions', '#plans', '#day', '#where', '#hold'];
+
+function Home({
+  bowl, size, onBowl, onSize, reduced, isDark, railRef, scroll,
+  selectedPlanId, onChoosePlan,
+}) {
+  return (
+    <>
+      <BowlScene
+        bowlId={bowl.id} size={size} reduced={reduced} isDark={isDark}
+        railRef={railRef} scroll={scroll}
+      />
+      <main className="main">
+        <Hero bowl={bowl} size={size} />
+        <BowlPicker currentId={bowl.id} onSelect={onBowl} />
+        <SpecTable bowl={bowl} size={size} />
+        <MacroTiles bowl={bowl} size={size} />
+        <PortionSwitch bowl={bowl} size={size} onSize={onSize} />
+        <PlanGrid selectedPlanId={selectedPlanId} onChoose={onChoosePlan} />
+        <DayTimeline />
+        <DeliveryAreas />
+        <HoldSlot currentBowlName={bowl.name} selectedPlanId={selectedPlanId} onPlanChange={onChoosePlan} />
+      </main>
+    </>
+  );
+}
+
+/* ===== src/App.jsx ======================================================= */
+
+
+
+
+
+
+
+
+
+
+
+
+const DEFAULT_PLAN = PLANS.find((p) => p.pick)?.id ?? PLANS[0].id;
+
+function App() {
+  const [bowlId, setBowlId] = useState(BOWLS[0].id);
+  const [size, setSize] = useState('cut');
+  const [selectedPlanId, setSelectedPlanId] = useState(DEFAULT_PLAN);
+  const [tipped, setTipped] = useState(false);
+  const railRef = useRef(null);
+  const { isDark, toggle } = useTheme();
+  const reduced = useReducedMotion();
+
+  const bowl = BOWL_BY_ID[bowlId];
+  const scroll = useScrollProgress(HOME_SECTIONS);
+
+  /* the accent is the active bowl's, resolved for the current theme */
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--accent', isDark ? bowl.accent.dark : bowl.accent.light,
+    );
+  }, [bowl, isDark]);
+
+  const onBowl = useCallback((id) => {
+    setBowlId(id);
+    setTipped(true);                       // the balance tips when the load changes
+    setTimeout(() => setTipped(false), 780);
+  }, []);
+
+  /* a plan card's "Choose this plan" button sets the sign-up form's plan
+     and carries the visitor straight to it, without relying on hash routing
+     quirks (a nested "#page#section" hash does not auto-scroll). */
+  const onChoosePlan = useCallback((planId) => {
+    setSelectedPlanId(planId);
+    const target = document.getElementById('hold');
+    if (target) target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }, [reduced]);
+
+  return (
+    <>
+      <Loader />
+      <ScaleRail railRef={railRef} />
+      <Header isDark={isDark} onToggleTheme={toggle} logoTipped={tipped} />
+      <Home
+        bowl={bowl} size={size} onBowl={onBowl} onSize={setSize}
+        reduced={reduced} isDark={isDark} railRef={railRef} scroll={scroll}
+        selectedPlanId={selectedPlanId} onChoosePlan={onChoosePlan}
+      />
+      <Marquee />
+      <Footer />
+    </>
+  );
+}
+
+/* ===== mount ============================================================== */
+const boot = document.getElementById('boot');
+if (boot) { boot.classList.add('off'); setTimeout(() => boot.remove(), 400); }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>

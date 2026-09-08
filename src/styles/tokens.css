@@ -1,0 +1,44 @@
+/* ===== EatMakro tokens ====================================================
+   Neutrals are a cold prep-room grey-blue and never change. Every saturated
+   value on the page comes from the selected bowl, and is set on :root by the
+   theme layer at runtime. Accents are held a stop back from the raw food
+   colour so they still read as type on both grounds.
+   ======================================================================== */
+:root{
+  --paper:#dee4e9;
+  --paper-2:#eaeef2;
+  --paper-3:#f4f7f9;
+  --ink:#111a20;
+  --ink-60:rgba(17,26,32,.60);
+  --ink-32:rgba(17,26,32,.32);
+  --ink-14:rgba(17,26,32,.14);
+  --ink-07:rgba(17,26,32,.07);
+  --steel:#8794a0;
+  --veil:rgba(222,228,233,.90);
+
+  --accent:#a8452a;          /* replaced at runtime by the active bowl */
+
+  --font-display:"Bricolage Grotesque","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-scale:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --rail:58px;
+  --gutter:clamp(18px,4vw,72px);
+  --measure:34ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1216; --paper-2:#141c22; --paper-3:#1b242b; --ink:#dee6ec;
+    --ink-60:rgba(222,230,236,.62); --ink-32:rgba(222,230,236,.32);
+    --ink-14:rgba(222,230,236,.15); --ink-07:rgba(222,230,236,.07);
+    --steel:#6d7b87; --veil:rgba(12,18,22,.90);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1216; --paper-2:#141c22; --paper-3:#1b242b; --ink:#dee6ec;
+  --ink-60:rgba(222,230,236,.62); --ink-32:rgba(222,230,236,.32);
+  --ink-14:rgba(222,230,236,.15); --ink-07:rgba(222,230,236,.07);
+  --steel:#6d7b87; --veil:rgba(12,18,22,.90);
+  color-scheme:dark;
+}
