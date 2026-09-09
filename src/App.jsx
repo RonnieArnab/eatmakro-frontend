@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { BOWLS, BOWL_BY_ID } from './data/bowls.js';
 import { PLANS } from './data/site.js';
 import { useTheme } from './hooks/useTheme.js';
@@ -25,12 +25,17 @@ export default function App() {
   const bowl = BOWL_BY_ID[bowlId];
   const scroll = useScrollProgress(HOME_SECTIONS);
 
-  /* the accent is the active bowl's, resolved for the current theme */
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      '--accent', isDark ? bowl.accent.dark : bowl.accent.light,
-    );
-  }, [bowl, isDark]);
+  /* --accent used to be swapped at runtime for the selected bowl's own food
+     colour (chicken-tikka brick, paneer saffron, ...). The site now runs a
+     single fixed brand palette instead — see the "brand tokens" comment at
+     the top of src/styles/tokens.css to change it. To bring per-bowl accents
+     back, restore this effect:
+       useEffect(() => {
+         document.documentElement.style.setProperty(
+           '--accent', isDark ? bowl.accent.dark : bowl.accent.light,
+         );
+       }, [bowl, isDark]);
+  */
 
   const onBowl = useCallback((id) => {
     setBowlId(id);
