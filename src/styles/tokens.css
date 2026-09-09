@@ -18,72 +18,91 @@
    fixed palette is what actually renders — see the comment in App.jsx if you
    want per-bowl accents back.
    ========================================================================== */
-:root{
+:root {
   /* ---- brand tokens: the only five lines to touch for a light-mode recolour --- */
-  --text:#050316;
-  --background:#fbfbfe;
-  --primary:#2f27ce;
-  --secondary:#dddbff;
-  --accent:#443dff;
-
+  /* --text: #050316;
+  --background: #fbfbfe;
+  --primary: #2f27ce;
+  --secondary: #dddbff;
+  --accent: #443dff;
+ */
+  --text: #050316;
+  --background: #fbfbfe;
+  --primary: #163a2b;
+  --secondary: #dddbff;
+  --accent: #d9f24a;
   /* ---- derived working tokens: component CSS reads these, not the five above -- */
-  --paper:var(--background);
-  --paper-2:var(--secondary);
-  --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-  --ink:var(--text);
-  --ink-60:color-mix(in srgb, var(--text) 60%, transparent);
-  --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-  --ink-14:color-mix(in srgb, var(--text) 14%, transparent);
-  --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-  --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-  --veil:color-mix(in srgb, var(--background) 90%, transparent);
+  --paper: var(--background);
+  --paper-2: var(--secondary);
+  --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+  --ink: var(--text);
+  --ink-60: color-mix(in srgb, var(--text) 60%, transparent);
+  --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+  --ink-14: color-mix(in srgb, var(--text) 14%, transparent);
+  --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+  --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+  --veil: color-mix(in srgb, var(--background) 90%, transparent);
 
-  --font-display:"Bricolage Grotesque","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --font-scale:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --font-display:
+    "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-scale:
+    "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --rail:58px;
-  --gutter:clamp(18px,4vw,72px);
-  --measure:34ch;
-  color-scheme:light;
+  --rail: 58px;
+  --gutter: clamp(18px, 4vw, 72px);
+  --measure: 34ch;
+  color-scheme: light;
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
     /* ---- brand tokens: the only five lines to touch for a dark-mode recolour --- */
-    --text:#eae9fc;
-    --background:#010104;
-    --primary:#3a31d8;
-    --secondary:#020024;
-    --accent:#0600c2;
+    /* --text: #eae9fc;
+    --background: #010104;
+    --primary: #3a31d8;
+    --secondary: #020024;
+    --accent: #0600c2; */
 
-    --paper:var(--background);
-    --paper-2:var(--secondary);
-    --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-    --ink:var(--text);
-    --ink-60:color-mix(in srgb, var(--text) 62%, transparent);
-    --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-    --ink-14:color-mix(in srgb, var(--text) 15%, transparent);
-    --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-    --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-    --veil:color-mix(in srgb, var(--background) 90%, transparent);
-    color-scheme:dark;
+    --text: #eae9fc;
+    --background: #010104;
+    --primary: #163a2b;
+    --secondary: #020024;
+    --accent: #d9f24a;
+
+    --paper: var(--background);
+    --paper-2: var(--secondary);
+    --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+    --ink: var(--text);
+    --ink-60: color-mix(in srgb, var(--text) 62%, transparent);
+    --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+    --ink-14: color-mix(in srgb, var(--text) 15%, transparent);
+    --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+    --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+    --veil: color-mix(in srgb, var(--background) 90%, transparent);
+    color-scheme: dark;
   }
 }
-:root[data-theme="dark"]{
-  --text:#eae9fc;
-  --background:#010104;
-  --primary:#3a31d8;
-  --secondary:#020024;
-  --accent:#0600c2;
+:root[data-theme="dark"] {
+  /* --text: #eae9fc;
+  --background: #010104;
+  --primary: #3a31d8;
+  --secondary: #020024;
+  --accent: #0600c2; */
 
-  --paper:var(--background);
-  --paper-2:var(--secondary);
-  --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-  --ink:var(--text);
-  --ink-60:color-mix(in srgb, var(--text) 62%, transparent);
-  --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-  --ink-14:color-mix(in srgb, var(--text) 15%, transparent);
-  --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-  --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-  --veil:color-mix(in srgb, var(--background) 90%, transparent);
-  color-scheme:dark;
+  --text: #f2f2f2;
+  --background: #0d0d0d;
+  --primary: #163a2b;
+  --secondary: #1c1c1c;
+  --accent: #d9f24a;
+
+  --paper: var(--background);
+  --paper-2: var(--secondary);
+  --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+  --ink: var(--text);
+  --ink-60: color-mix(in srgb, var(--text) 62%, transparent);
+  --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+  --ink-14: color-mix(in srgb, var(--text) 15%, transparent);
+  --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+  --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+  --veil: color-mix(in srgb, var(--background) 90%, transparent);
+  color-scheme: dark;
 }
