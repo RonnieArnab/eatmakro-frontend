@@ -7,7 +7,7 @@ export function BowlPicker({ currentId, onSelect }) {
       <div className="marker mono">4 bowls</div>
       <h2>Pick a bowl. The whole page follows it.</h2>
       <p className="lede">
-        Four rotations, one kitchen. Choose one and watch the dabba empty out and refill —
+        Six rotations, one kitchen. Choose one and watch the dabba empty out and refill —
         every ingredient is modelled, and the site takes its colour from whatever is in the box.
       </p>
       <div className="bowls" role="group" aria-label="Choose a bowl">

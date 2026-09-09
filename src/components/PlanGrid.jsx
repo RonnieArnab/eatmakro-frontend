@@ -31,7 +31,7 @@ export function PlanGrid({ selectedPlanId, onChoose }) {
         })}
       </div>
       <p>
-        Prices are per meal and include delivery inside the live zones. All four bowls cost the
+        Prices are per meal and include delivery inside the live zones. All six bowls cost the
         same, and cut and bulk cost the same — the difference is weight, not price.
       </p>
     </section>

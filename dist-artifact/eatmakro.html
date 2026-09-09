@@ -22,74 +22,93 @@
    fixed palette is what actually renders — see the comment in App.jsx if you
    want per-bowl accents back.
    ========================================================================== */
-:root{
+:root {
   /* ---- brand tokens: the only five lines to touch for a light-mode recolour --- */
-  --text:#050316;
-  --background:#fbfbfe;
-  --primary:#2f27ce;
-  --secondary:#dddbff;
-  --accent:#443dff;
-
+  /* --text: #050316;
+  --background: #fbfbfe;
+  --primary: #2f27ce;
+  --secondary: #dddbff;
+  --accent: #443dff;
+ */
+  --text: #050316;
+  --background: #fbfbfe;
+  --primary: #163a2b;
+  --secondary: #dddbff;
+  --accent: #d9f24a;
   /* ---- derived working tokens: component CSS reads these, not the five above -- */
-  --paper:var(--background);
-  --paper-2:var(--secondary);
-  --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-  --ink:var(--text);
-  --ink-60:color-mix(in srgb, var(--text) 60%, transparent);
-  --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-  --ink-14:color-mix(in srgb, var(--text) 14%, transparent);
-  --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-  --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-  --veil:color-mix(in srgb, var(--background) 90%, transparent);
+  --paper: var(--background);
+  --paper-2: var(--secondary);
+  --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+  --ink: var(--text);
+  --ink-60: color-mix(in srgb, var(--text) 60%, transparent);
+  --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+  --ink-14: color-mix(in srgb, var(--text) 14%, transparent);
+  --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+  --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+  --veil: color-mix(in srgb, var(--background) 90%, transparent);
 
-  --font-display:"Bricolage Grotesque","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --font-scale:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --font-display:
+    "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-scale:
+    "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --rail:58px;
-  --gutter:clamp(18px,4vw,72px);
-  --measure:34ch;
-  color-scheme:light;
+  --rail: 58px;
+  --gutter: clamp(18px, 4vw, 72px);
+  --measure: 34ch;
+  color-scheme: light;
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
     /* ---- brand tokens: the only five lines to touch for a dark-mode recolour --- */
-    --text:#eae9fc;
-    --background:#010104;
-    --primary:#3a31d8;
-    --secondary:#020024;
-    --accent:#0600c2;
+    /* --text: #eae9fc;
+    --background: #010104;
+    --primary: #3a31d8;
+    --secondary: #020024;
+    --accent: #0600c2; */
 
-    --paper:var(--background);
-    --paper-2:var(--secondary);
-    --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-    --ink:var(--text);
-    --ink-60:color-mix(in srgb, var(--text) 62%, transparent);
-    --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-    --ink-14:color-mix(in srgb, var(--text) 15%, transparent);
-    --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-    --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-    --veil:color-mix(in srgb, var(--background) 90%, transparent);
-    color-scheme:dark;
+    --text: #eae9fc;
+    --background: #010104;
+    --primary: #163a2b;
+    --secondary: #020024;
+    --accent: #d9f24a;
+
+    --paper: var(--background);
+    --paper-2: var(--secondary);
+    --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+    --ink: var(--text);
+    --ink-60: color-mix(in srgb, var(--text) 62%, transparent);
+    --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+    --ink-14: color-mix(in srgb, var(--text) 15%, transparent);
+    --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+    --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+    --veil: color-mix(in srgb, var(--background) 90%, transparent);
+    color-scheme: dark;
   }
 }
-:root[data-theme="dark"]{
-  --text:#eae9fc;
-  --background:#010104;
-  --primary:#3a31d8;
-  --secondary:#020024;
-  --accent:#0600c2;
+:root[data-theme="dark"] {
+  /* --text: #eae9fc;
+  --background: #010104;
+  --primary: #3a31d8;
+  --secondary: #020024;
+  --accent: #0600c2; */
 
-  --paper:var(--background);
-  --paper-2:var(--secondary);
-  --paper-3:color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
-  --ink:var(--text);
-  --ink-60:color-mix(in srgb, var(--text) 62%, transparent);
-  --ink-32:color-mix(in srgb, var(--text) 32%, transparent);
-  --ink-14:color-mix(in srgb, var(--text) 15%, transparent);
-  --ink-07:color-mix(in srgb, var(--text) 7%, transparent);
-  --steel:color-mix(in srgb, var(--text) 45%, var(--background) 55%);
-  --veil:color-mix(in srgb, var(--background) 90%, transparent);
-  color-scheme:dark;
+  --text: #f2f2f2;
+  --background: #0d0d0d;
+  --primary: #163a2b;
+  --secondary: #1c1c1c;
+  --accent: #d9f24a;
+
+  --paper: var(--background);
+  --paper-2: var(--secondary);
+  --paper-3: color-mix(in srgb, var(--background) 55%, var(--secondary) 45%);
+  --ink: var(--text);
+  --ink-60: color-mix(in srgb, var(--text) 62%, transparent);
+  --ink-32: color-mix(in srgb, var(--text) 32%, transparent);
+  --ink-14: color-mix(in srgb, var(--text) 15%, transparent);
+  --ink-07: color-mix(in srgb, var(--text) 7%, transparent);
+  --steel: color-mix(in srgb, var(--text) 45%, var(--background) 55%);
+  --veil: color-mix(in srgb, var(--background) 90%, transparent);
+  color-scheme: dark;
 }
 
 * {
@@ -1405,6 +1424,20 @@ const FOOD = {
   curd:        0xf4f1e6,
   makhani:     0xbd6a3d,
 
+  steak:       0x8a4a35,
+  steakChar:   0x3c2016,
+  quinoaCream: 0xe8dcc0,
+  quinoaRed:   0xb5654a,
+  quinoaBlack: 0x4a4038,
+  sweetPotato:     0xc4691f,
+  sweetPotatoChar: 0x5a2e12,
+  cabbage:     0x6b3a5c,
+  cucumber:    0x7a9c5a,
+  olive:       0x5e6b3a,
+  fishFlesh:   0xe8d4c0,
+  chimichurri: 0x4a6b2e,
+  pea:         0x6b8f4a,
+
   steel:       0xc4ccd4,
   steelDark:   0x6f7a85,
   brass:       0xb09a63,
@@ -1716,6 +1749,130 @@ function corianderScatter(n, radius, y) {
   return m;
 }
 
+/* --------------------------------------------------- steak, quinoa, sides */
+
+let steakCharMat = null;
+/** A charred steak slice: flatter and darker than tikka, char bars running
+ *  across the grain rather than in patches. */
+function steakSlice(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.34, 0.1, 0.2, 0.035, 4), 0.02, 6 + seed), mat(FOOD.steak, 0.55)));
+  steakCharMat = steakCharMat || mat(FOOD.steakChar, 0.7);
+  for (let i = 0; i < 2; i++) {
+    const bar = new THREE.Mesh(roundedBox(0.3, 0.012, 0.03, 0.006, 2), steakCharMat);
+    bar.position.set(0, 0.052, -0.05 + i * 0.1);
+    g.add(bar);
+  }
+  return g;
+}
+
+/** Tri-colour quinoa: three grain mounds layered so no single colour reads
+ *  as the "true" one, the way real tri-colour quinoa looks in a bowl. */
+function quinoaMound() {
+  const g = new THREE.Group();
+  g.add(grainMound({ count: 280, color: FOOD.quinoaCream, r: 0.03, sx: 1.1, sy: 1, sz: 1.1 }));
+  g.add(grainMound({ count: 90, color: FOOD.quinoaRed, r: 0.028, sx: 1.1, sy: 1, sz: 1.1 }));
+  g.add(grainMound({ count: 70, color: FOOD.quinoaBlack, r: 0.026, sx: 1.1, sy: 1, sz: 1.1 }));
+  return g;
+}
+
+function sweetPotatoCube(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.1, 0.1, 0.1, 0.02, 3), 0.04, 8 + seed), mat(FOOD.sweetPotato, 0.62)));
+  const char = new THREE.Mesh(roundedBox(0.09, 0.01, 0.09, 0.006, 2), mat(FOOD.sweetPotatoChar, 0.7));
+  char.position.y = 0.052;
+  g.add(char);
+  return g;
+}
+
+/** A thin curved ribbon: cabbage, carrot or cucumber, shredded raw — the
+ *  same flattened box works for all three, only the colour changes. */
+function slawRibbon(seed = 0) {
+  const colours = [FOOD.cabbage, FOOD.carrot, FOOD.cucumber];
+  const geo = roughen(roundedBox(0.16, 0.014, 0.05, 0.006, 2), 0.05, 10 + seed);
+  const m = new THREE.Mesh(geo, mat(colours[seed % 3], 0.6, { side: THREE.DoubleSide }));
+  m.rotation.set((hash3(seed, 1, 2) - 0.5) * 1.2, hash3(seed, 3, 4) * 6.283, (hash3(seed, 5, 6) - 0.5) * 0.8);
+  return m;
+}
+
+function oliveBall() {
+  return new THREE.Mesh(roughen(new THREE.SphereGeometry(0.06, 12, 9), 0.02, 6), mat(FOOD.olive, 0.4));
+}
+
+/** A dip in its own ramekin, not just a dollop in the bowl — the tahini or
+ *  yoghurt sauce that sits apart from everything else until you stir it in. */
+function ramekinDip(color = FOOD.curd) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.09, 20), mat(0xefe9dd, 0.55)));
+  const sauce = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.02, 20), mat(color, 0.35));
+  sauce.position.y = 0.05;
+  g.add(sauce);
+  return g;
+}
+
+/* ---------------------------------------------------------- fish, garnish */
+
+function fishFillet() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.34, 0.09, 0.2, 0.04, 4), 0.015, 5), mat(FOOD.fishFlesh, 0.5)));
+  const herb = new THREE.Mesh(roughen(new THREE.SphereGeometry(0.14, 10, 7), 0.09, 7), mat(FOOD.chimichurri, 0.8, { flatShading: true }));
+  herb.scale.set(1.15, 0.28, 0.72);
+  herb.position.y = 0.052;
+  g.add(herb);
+  return g;
+}
+
+/** A full lemon wheel, not a wedge: flesh disc, rind ring, faint pith lines. */
+function lemonWheel() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.035, 20), mat(FOOD.lemon, 0.42)));
+  const rind = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.014, 8, 26), mat(0xb9a44a, 0.55));
+  rind.rotation.x = Math.PI / 2;
+  g.add(rind);
+  const pithMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
+  for (let i = 0; i < 6; i++) {
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.006, 0.008), pithMat);
+    seg.rotation.y = (i / 6) * Math.PI;
+    seg.position.y = 0.019;
+    g.add(seg);
+  }
+  return g;
+}
+
+function peaCluster(n) {
+  const geo = new THREE.SphereGeometry(0.032, 8, 6);
+  const m = new THREE.InstancedMesh(geo, mat(FOOD.pea, 0.5), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 3.1, 6.6) * 6.283;
+    const rr = Math.sqrt(hash3(i, 2.2, 8.8)) * 0.3;
+    d.position.set(Math.cos(a) * rr, 0.08 + hash3(i, 9, 3) * 0.05, Math.sin(a) * rr);
+    d.scale.setScalar(0.85 + hash3(i, 4, 4) * 0.3);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+/** Upright blades, thinner and taller than the coriander scatter — a
+ *  microgreens finish rather than a chopped-herb one. */
+function microgreenScatter(n, radius, y) {
+  const geo = roundedBox(0.025, 0.006, 0.11, 0.003, 2);
+  const m = new THREE.InstancedMesh(geo, mat(0x6fae4a, 0.72), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 4.4, 9.9) * 6.283;
+    const rr = Math.sqrt(hash3(i, 7.7, 2.2)) * radius;
+    d.position.set(Math.cos(a) * rr, y + hash3(i, 1, 1) * 0.04, Math.sin(a) * rr);
+    d.rotation.set(0.9 + hash3(i, 2, 3) * 0.6, hash3(i, 5, 6) * 6.283, (hash3(i, 8, 1) - 0.5) * 0.6);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
 /** A wavy tube that drifts and fades: steam above food that is still hot. */
 function steamRibbon(seed = 0) {
   const pts = [];
@@ -1917,6 +2074,79 @@ const BUILDERS = {
     lw.rotation.set(1.5, 0.8, 0.4);
     L.top.add(cd, lw, corianderScatter(28, 0.7, 0.5));
   },
+
+  /* Steak, quinoa, sweet potato, cabbage slaw and olives — the reference set
+     of images across two different plates all sharing that composition. */
+  steak(L) {
+    L.grain.add(quinoaMound());
+    for (let i = 0; i < 6; i++) {
+      const s = steakSlice(i);
+      const a = (i / 6) * 6.283 + 0.5;
+      s.position.set(Math.cos(a) * 0.36, 0.48 + i * 0.012, Math.sin(a) * 0.36);
+      s.rotation.y = -a + 0.25;
+      L.prot.add(s);
+    }
+    for (let sp = 0; sp < 4; sp++) {
+      const cube = sweetPotatoCube(sp);
+      const a = -0.7 + sp * 0.5;
+      cube.position.set(Math.cos(a) * 0.6, 0.36 + sp * 0.01, Math.sin(a) * 0.6);
+      cube.rotation.y = hash3(sp, 2, 5) * 6.283;
+      L.veg.add(cube);
+    }
+    for (let b = 0; b < 2; b++) {
+      const br = broccoli(b * 2.1);
+      br.position.set(-0.3 + b * 0.6, 0.34, -0.5);
+      br.scale.setScalar(0.85);
+      L.veg.add(br);
+    }
+    for (let r = 0; r < 8; r++) {
+      const ribbon = slawRibbon(r);
+      const a = hash3(r, 3, 9) * 6.283;
+      const rr = 0.2 + hash3(r, 5, 1) * 0.24;
+      ribbon.position.set(Math.cos(a) * rr - 0.42, 0.4 + hash3(r, 8, 2) * 0.05, Math.sin(a) * rr + 0.1);
+      L.veg.add(ribbon);
+    }
+    for (let o = 0; o < 4; o++) {
+      const ball = oliveBall();
+      ball.position.set(-0.48 + o * 0.1, 0.44 + hash3(o, 4, 4) * 0.03, 0.5 - o * 0.02);
+      L.top.add(ball);
+    }
+    const dip = ramekinDip();
+    dip.position.set(0.58, 0.44, -0.42);
+    L.top.add(dip, corianderScatter(18, 0.5, 0.5));
+  },
+
+  /* Herb-crusted fish, basmati, peas and a full lemon wheel — the fourth
+     reference plate, chimichurri standing in for the site's usual masala. */
+  fish(L) {
+    L.grain.add(basmati());
+    const fillet = fishFillet();
+    fillet.position.set(0.3, 0.5, 0.16);
+    fillet.rotation.y = 0.3;
+    L.prot.add(fillet);
+    for (let b = 0; b < 2; b++) {
+      const br = broccoli(b * 1.6);
+      br.position.set(Math.cos(-0.6 + b * 0.7) * 0.6, 0.34, Math.sin(-0.6 + b * 0.7) * 0.6);
+      br.scale.setScalar(0.85);
+      L.veg.add(br);
+    }
+    for (let c = 0; c < 3; c++) {
+      const car = carrot();
+      car.position.set(-0.3 + c * 0.16, 0.4 + c * 0.04, -0.5);
+      car.rotation.set(Math.PI / 2, 0.2 * c, 0.3 + c * 0.1);
+      L.veg.add(car);
+    }
+    const peas = peaCluster(50);
+    peas.position.set(-0.5, 0.36, 0.3);
+    L.veg.add(peas);
+    const cd = curdDollop();
+    cd.position.set(-0.6, 0.42, 0.16);
+    cd.scale.setScalar(0.85);
+    const lw = lemonWheel();
+    lw.position.set(0.6, 0.42, -0.4);
+    lw.rotation.x = -Math.PI / 2;
+    L.top.add(cd, lw, microgreenScatter(24, 0.42, 0.5));
+  },
 };
 
 /** Builds one rotation's contents into a group of four named layers. */
@@ -1996,20 +2226,28 @@ const DAY_TIMELINE = [
 ];
 
 const MARQUEE = [
-  'WEIGHED, NOT GUESSED', '4 BOWLS', 'KITCHEN ON CAMERA', 'PRINTED MACROS',
+  'WEIGHED, NOT GUESSED', '6 BOWLS', 'KITCHEN ON CAMERA', 'PRINTED MACROS',
   'RETURNABLE STEEL', '5 ml OIL', '70 BOXES A DAY', 'DIRECT ONLY',
 ];
 
 /* ===== src/data/bowls.js ================================================= */
 /**
- * The four rotations. Each carries its own accent, pulled out of its own
- * food, so choosing a bowl re-themes the whole site. Accents are held one
- * stop back from the raw ingredient colour so they stay readable as type.
+ * The six rotations. Each carries its own accent, pulled out of its own
+ * food — used on the bowl-picker swatch, the picker's selection ring and
+ * the printed macro sticker, not the site's own accent, which is now fixed
+ * (see src/styles/tokens.css). Accents are held one stop back from the raw
+ * ingredient colour so they stay readable as type.
  *
  * Weights are cooked weights and sum to `net`. Macros come from the team's
  * 06 Sep target of 45–52 g protein and about 520 kcal for the chicken bowl;
- * the other three are computed from their own components and are honestly
- * lower where the ingredients are lower.
+ * the rest are computed from their own components and are honestly lower
+ * where the ingredients are lower. Steak and fish were added from a set of
+ * four reference photos (charred steak/quinoa/olives/slaw bowls and a
+ * herb-crusted fish bowl) — see src/three/food.js for the new primitives
+ * (steakSlice, quinoaMound, sweetPotatoCube, slawRibbon, oliveBall,
+ * ramekinDip, fishFillet, lemonWheel, peaCluster, microgreenScatter) that
+ * model them procedurally, the same way every other ingredient here is
+ * modelled — nothing is a loaded image or a scanned mesh.
  */
 const BOWLS = [
   {
@@ -2102,6 +2340,52 @@ const BOWLS = [
     anchors: {
       prot: [0.36, 0.54, 0.22], grain: [0, 0.36, 0], veg: [0.4, 0.44, 0.42],
       veg2: [-0.34, 0.46, -0.44], top: [-0.58, 0.48, 0.24], masala: [1.02, 0.34, 0.26],
+    },
+  },
+  {
+    id: 'steak',
+    name: 'Charred Steak Bowl',
+    tag: 'NON-VEG',
+    accent: { light: '#8a4a35', dark: '#c98a6f' },
+    swatch: '#8a4a35',
+    grainLabel: 'tri-colour quinoa',
+    proteinLabel: 'charred steak',
+    cut:  { net: 590, grain: 130, prot: 150, p: 46, c: 54, f: 18, k: 560 },
+    bulk: { net: 780, grain: 240, prot: 220, p: 66, c: 88, f: 27, k: 860 },
+    items: [
+      ['Steak, charred', 150, '#8a4a35', 'Seared hot and fast, rested before it is sliced.'],
+      ['Tri-colour quinoa', 130, '#e8dcc0', 'Cooked weight, three grains for one texture.'],
+      ['Sweet potato, roasted', 100, '#c4691f', 'Roasted whole, cut after — the char stays on the outside.'],
+      ['Broccoli', 90, '#5d7f47', 'Steamed 4 minutes so it still bites back.'],
+      ['Red cabbage slaw + olives', 110, '#6b3a5c', 'Shredded raw. The olives bring their own salt.'],
+      ['Oil + masala', 10, '#8a6740', 'About 5 ml of oil. Masala is measured too — it counts.'],
+    ],
+    anchors: {
+      prot: [0.36, 0.54, 0.22], grain: [0, 0.36, 0], veg: [0.5, 0.44, 0.3],
+      veg2: [-0.42, 0.42, 0.1], top: [0.58, 0.48, -0.42], masala: [1.02, 0.34, 0.26],
+    },
+  },
+  {
+    id: 'fish',
+    name: 'Chimichurri Fish Bowl',
+    tag: 'PESCATARIAN',
+    accent: { light: '#3f7a52', dark: '#7fc294' },
+    swatch: '#4a6b2e',
+    grainLabel: 'basmati rice',
+    proteinLabel: 'chimichurri fish',
+    cut:  { net: 580, grain: 140, prot: 150, p: 40, c: 48, f: 15, k: 500 },
+    bulk: { net: 760, grain: 250, prot: 220, p: 58, c: 80, f: 22, k: 760 },
+    items: [
+      ['Grilled fish, chimichurri', 150, '#e8d4c0', 'Herb-crusted, pan-seared skin-off.'],
+      ['Basmati rice', 140, '#eee9dc', 'Cooked weight, drained.'],
+      ['Broccoli + carrot', 110, '#5d7f47', 'Steamed 4 minutes so it still bites back.'],
+      ['Green peas', 60, '#6b8f4a', 'Blanched, not boiled — colour stays.'],
+      ['Curd, low fat', 100, '#f4f1e6', 'Set overnight in the kitchen.'],
+      ['Lemon + microgreens', 20, '#d4be62', 'Squeezed at the table, not before.'],
+    ],
+    anchors: {
+      prot: [0.3, 0.5, 0.16], grain: [0, 0.36, 0], veg: [0.6, 0.34, -0.4],
+      veg2: [-0.5, 0.36, 0.3], top: [0.6, 0.42, -0.4], masala: [1.02, 0.34, 0.26],
     },
   },
 ];
@@ -2488,7 +2772,7 @@ function Hero({ bowl, size }) {
     <section className="sec hero" id="top">
       <h1>Weighed,<br /><span className="lo">not</span> <em>guessed.</em></h1>
       <p className="lede">
-        Four high-protein bowls cooked in Hyderabad every morning, put on a bench scale
+        Six high-protein bowls cooked in Hyderabad every morning, put on a bench scale
         component by component, and sealed. You get the grams. Not an adjective.
       </p>
       <div className="stats">
@@ -2510,7 +2794,7 @@ function BowlPicker({ currentId, onSelect }) {
       <div className="marker mono">4 bowls</div>
       <h2>Pick a bowl. The whole page follows it.</h2>
       <p className="lede">
-        Four rotations, one kitchen. Choose one and watch the dabba empty out and refill —
+        Six rotations, one kitchen. Choose one and watch the dabba empty out and refill —
         every ingredient is modelled, and the site takes its colour from whatever is in the box.
       </p>
       <div className="bowls" role="group" aria-label="Choose a bowl">
@@ -2678,7 +2962,7 @@ function PlanGrid({ selectedPlanId, onChoose }) {
         })}
       </div>
       <p>
-        Prices are per meal and include delivery inside the live zones. All four bowls cost the
+        Prices are per meal and include delivery inside the live zones. All six bowls cost the
         same, and cut and bulk cost the same — the difference is weight, not price.
       </p>
     </section>
@@ -3295,7 +3579,7 @@ function BowlScene({ bowlId, size, reduced, isDark, railRef, scroll }) {
       /* the other three rotations are built just after first paint, so the
          first frame is never held up by geometry nobody can see yet */
       const warm = setTimeout(() => {
-        ['tikka', 'paneer', 'chana', 'egg'].forEach((id) => getContents(id));
+        ['tikka', 'paneer', 'chana', 'egg', 'steak', 'fish'].forEach((id) => getContents(id));
       }, 450);
 
       return () => {

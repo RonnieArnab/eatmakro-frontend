@@ -4,6 +4,8 @@ import {
   basmati, jeeraRice, millet, tikkaChunk, paneerCube, chickpeas, eggHalf,
   broccoli, carrot, beetSlice, capsicum, CAPSICUM_COLOURS, onionPetal,
   tomatoWedge, spinachLeaf, lemonWedge, curdDollop, makhaniDollop, corianderScatter,
+  steakSlice, quinoaMound, sweetPotatoCube, slawRibbon, oliveBall, ramekinDip,
+  fishFillet, lemonWheel, peaCluster, microgreenScatter,
 } from './food.js';
 
 /**
@@ -126,6 +128,79 @@ export const BUILDERS = {
     lw.position.set(0.58, 0.42, 0.3);
     lw.rotation.set(1.5, 0.8, 0.4);
     L.top.add(cd, lw, corianderScatter(28, 0.7, 0.5));
+  },
+
+  /* Steak, quinoa, sweet potato, cabbage slaw and olives — the reference set
+     of images across two different plates all sharing that composition. */
+  steak(L) {
+    L.grain.add(quinoaMound());
+    for (let i = 0; i < 6; i++) {
+      const s = steakSlice(i);
+      const a = (i / 6) * 6.283 + 0.5;
+      s.position.set(Math.cos(a) * 0.36, 0.48 + i * 0.012, Math.sin(a) * 0.36);
+      s.rotation.y = -a + 0.25;
+      L.prot.add(s);
+    }
+    for (let sp = 0; sp < 4; sp++) {
+      const cube = sweetPotatoCube(sp);
+      const a = -0.7 + sp * 0.5;
+      cube.position.set(Math.cos(a) * 0.6, 0.36 + sp * 0.01, Math.sin(a) * 0.6);
+      cube.rotation.y = hash3(sp, 2, 5) * 6.283;
+      L.veg.add(cube);
+    }
+    for (let b = 0; b < 2; b++) {
+      const br = broccoli(b * 2.1);
+      br.position.set(-0.3 + b * 0.6, 0.34, -0.5);
+      br.scale.setScalar(0.85);
+      L.veg.add(br);
+    }
+    for (let r = 0; r < 8; r++) {
+      const ribbon = slawRibbon(r);
+      const a = hash3(r, 3, 9) * 6.283;
+      const rr = 0.2 + hash3(r, 5, 1) * 0.24;
+      ribbon.position.set(Math.cos(a) * rr - 0.42, 0.4 + hash3(r, 8, 2) * 0.05, Math.sin(a) * rr + 0.1);
+      L.veg.add(ribbon);
+    }
+    for (let o = 0; o < 4; o++) {
+      const ball = oliveBall();
+      ball.position.set(-0.48 + o * 0.1, 0.44 + hash3(o, 4, 4) * 0.03, 0.5 - o * 0.02);
+      L.top.add(ball);
+    }
+    const dip = ramekinDip();
+    dip.position.set(0.58, 0.44, -0.42);
+    L.top.add(dip, corianderScatter(18, 0.5, 0.5));
+  },
+
+  /* Herb-crusted fish, basmati, peas and a full lemon wheel — the fourth
+     reference plate, chimichurri standing in for the site's usual masala. */
+  fish(L) {
+    L.grain.add(basmati());
+    const fillet = fishFillet();
+    fillet.position.set(0.3, 0.5, 0.16);
+    fillet.rotation.y = 0.3;
+    L.prot.add(fillet);
+    for (let b = 0; b < 2; b++) {
+      const br = broccoli(b * 1.6);
+      br.position.set(Math.cos(-0.6 + b * 0.7) * 0.6, 0.34, Math.sin(-0.6 + b * 0.7) * 0.6);
+      br.scale.setScalar(0.85);
+      L.veg.add(br);
+    }
+    for (let c = 0; c < 3; c++) {
+      const car = carrot();
+      car.position.set(-0.3 + c * 0.16, 0.4 + c * 0.04, -0.5);
+      car.rotation.set(Math.PI / 2, 0.2 * c, 0.3 + c * 0.1);
+      L.veg.add(car);
+    }
+    const peas = peaCluster(50);
+    peas.position.set(-0.5, 0.36, 0.3);
+    L.veg.add(peas);
+    const cd = curdDollop();
+    cd.position.set(-0.6, 0.42, 0.16);
+    cd.scale.setScalar(0.85);
+    const lw = lemonWheel();
+    lw.position.set(0.6, 0.42, -0.4);
+    lw.rotation.x = -Math.PI / 2;
+    L.top.add(cd, lw, microgreenScatter(24, 0.42, 0.5));
   },
 };
 
