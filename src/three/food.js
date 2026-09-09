@@ -186,6 +186,130 @@ export function corianderScatter(n, radius, y) {
   return m;
 }
 
+/* --------------------------------------------------- steak, quinoa, sides */
+
+let steakCharMat = null;
+/** A charred steak slice: flatter and darker than tikka, char bars running
+ *  across the grain rather than in patches. */
+export function steakSlice(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.34, 0.1, 0.2, 0.035, 4), 0.02, 6 + seed), mat(FOOD.steak, 0.55)));
+  steakCharMat = steakCharMat || mat(FOOD.steakChar, 0.7);
+  for (let i = 0; i < 2; i++) {
+    const bar = new THREE.Mesh(roundedBox(0.3, 0.012, 0.03, 0.006, 2), steakCharMat);
+    bar.position.set(0, 0.052, -0.05 + i * 0.1);
+    g.add(bar);
+  }
+  return g;
+}
+
+/** Tri-colour quinoa: three grain mounds layered so no single colour reads
+ *  as the "true" one, the way real tri-colour quinoa looks in a bowl. */
+export function quinoaMound() {
+  const g = new THREE.Group();
+  g.add(grainMound({ count: 280, color: FOOD.quinoaCream, r: 0.03, sx: 1.1, sy: 1, sz: 1.1 }));
+  g.add(grainMound({ count: 90, color: FOOD.quinoaRed, r: 0.028, sx: 1.1, sy: 1, sz: 1.1 }));
+  g.add(grainMound({ count: 70, color: FOOD.quinoaBlack, r: 0.026, sx: 1.1, sy: 1, sz: 1.1 }));
+  return g;
+}
+
+export function sweetPotatoCube(seed = 0) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.1, 0.1, 0.1, 0.02, 3), 0.04, 8 + seed), mat(FOOD.sweetPotato, 0.62)));
+  const char = new THREE.Mesh(roundedBox(0.09, 0.01, 0.09, 0.006, 2), mat(FOOD.sweetPotatoChar, 0.7));
+  char.position.y = 0.052;
+  g.add(char);
+  return g;
+}
+
+/** A thin curved ribbon: cabbage, carrot or cucumber, shredded raw — the
+ *  same flattened box works for all three, only the colour changes. */
+export function slawRibbon(seed = 0) {
+  const colours = [FOOD.cabbage, FOOD.carrot, FOOD.cucumber];
+  const geo = roughen(roundedBox(0.16, 0.014, 0.05, 0.006, 2), 0.05, 10 + seed);
+  const m = new THREE.Mesh(geo, mat(colours[seed % 3], 0.6, { side: THREE.DoubleSide }));
+  m.rotation.set((hash3(seed, 1, 2) - 0.5) * 1.2, hash3(seed, 3, 4) * 6.283, (hash3(seed, 5, 6) - 0.5) * 0.8);
+  return m;
+}
+
+export function oliveBall() {
+  return new THREE.Mesh(roughen(new THREE.SphereGeometry(0.06, 12, 9), 0.02, 6), mat(FOOD.olive, 0.4));
+}
+
+/** A dip in its own ramekin, not just a dollop in the bowl — the tahini or
+ *  yoghurt sauce that sits apart from everything else until you stir it in. */
+export function ramekinDip(color = FOOD.curd) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.09, 20), mat(0xefe9dd, 0.55)));
+  const sauce = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.02, 20), mat(color, 0.35));
+  sauce.position.y = 0.05;
+  g.add(sauce);
+  return g;
+}
+
+/* ---------------------------------------------------------- fish, garnish */
+
+export function fishFillet() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(roughen(roundedBox(0.34, 0.09, 0.2, 0.04, 4), 0.015, 5), mat(FOOD.fishFlesh, 0.5)));
+  const herb = new THREE.Mesh(roughen(new THREE.SphereGeometry(0.14, 10, 7), 0.09, 7), mat(FOOD.chimichurri, 0.8, { flatShading: true }));
+  herb.scale.set(1.15, 0.28, 0.72);
+  herb.position.y = 0.052;
+  g.add(herb);
+  return g;
+}
+
+/** A full lemon wheel, not a wedge: flesh disc, rind ring, faint pith lines. */
+export function lemonWheel() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.035, 20), mat(FOOD.lemon, 0.42)));
+  const rind = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.014, 8, 26), mat(0xb9a44a, 0.55));
+  rind.rotation.x = Math.PI / 2;
+  g.add(rind);
+  const pithMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
+  for (let i = 0; i < 6; i++) {
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.006, 0.008), pithMat);
+    seg.rotation.y = (i / 6) * Math.PI;
+    seg.position.y = 0.019;
+    g.add(seg);
+  }
+  return g;
+}
+
+export function peaCluster(n) {
+  const geo = new THREE.SphereGeometry(0.032, 8, 6);
+  const m = new THREE.InstancedMesh(geo, mat(FOOD.pea, 0.5), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 3.1, 6.6) * 6.283;
+    const rr = Math.sqrt(hash3(i, 2.2, 8.8)) * 0.3;
+    d.position.set(Math.cos(a) * rr, 0.08 + hash3(i, 9, 3) * 0.05, Math.sin(a) * rr);
+    d.scale.setScalar(0.85 + hash3(i, 4, 4) * 0.3);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+/** Upright blades, thinner and taller than the coriander scatter — a
+ *  microgreens finish rather than a chopped-herb one. */
+export function microgreenScatter(n, radius, y) {
+  const geo = roundedBox(0.025, 0.006, 0.11, 0.003, 2);
+  const m = new THREE.InstancedMesh(geo, mat(0x6fae4a, 0.72), n);
+  const d = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const a = hash3(i, 4.4, 9.9) * 6.283;
+    const rr = Math.sqrt(hash3(i, 7.7, 2.2)) * radius;
+    d.position.set(Math.cos(a) * rr, y + hash3(i, 1, 1) * 0.04, Math.sin(a) * rr);
+    d.rotation.set(0.9 + hash3(i, 2, 3) * 0.6, hash3(i, 5, 6) * 6.283, (hash3(i, 8, 1) - 0.5) * 0.6);
+    d.updateMatrix();
+    m.setMatrixAt(i, d.matrix);
+  }
+  m.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
 /** A wavy tube that drifts and fades: steam above food that is still hot. */
 export function steamRibbon(seed = 0) {
   const pts = [];

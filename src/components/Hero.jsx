@@ -6,7 +6,7 @@ export function Hero({ bowl, size }) {
     <section className="sec hero" id="top">
       <h1>Weighed,<br /><span className="lo">not</span> <em>guessed.</em></h1>
       <p className="lede">
-        Four high-protein bowls cooked in Hyderabad every morning, put on a bench scale
+        Six high-protein bowls cooked in Hyderabad every morning, put on a bench scale
         component by component, and sealed. You get the grams. Not an adjective.
       </p>
       <div className="stats">

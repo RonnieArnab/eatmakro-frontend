@@ -312,7 +312,7 @@ export function BowlScene({ bowlId, size, reduced, isDark, railRef, scroll }) {
       /* the other three rotations are built just after first paint, so the
          first frame is never held up by geometry nobody can see yet */
       const warm = setTimeout(() => {
-        ['tikka', 'paneer', 'chana', 'egg'].forEach((id) => getContents(id));
+        ['tikka', 'paneer', 'chana', 'egg', 'steak', 'fish'].forEach((id) => getContents(id));
       }, 450);
 
       return () => {
